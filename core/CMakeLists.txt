@@ -14,6 +14,10 @@ target_sources(core PRIVATE
     src/Mara/VAO.cpp
     src/Mara/EBO.cpp
     src/Mara/Shader.cpp
+    src/Mara/Texture.cpp
+    src/Mara/Renderer.cpp
+    src/Mara/ImGuiLayer.cpp
+    src/Mara/Framebuffer.cpp
  )
 
 # ----------------------------
@@ -87,6 +91,7 @@ add_library(imgui STATIC
 target_include_directories(imgui PUBLIC
     ${VENDOR_DIR}/imgui
     ${VENDOR_DIR}/imgui/backends
+     ${VENDOR_DIR}/stb
 )
 
 target_link_libraries(imgui PUBLIC glfw OpenGL::GL)
