@@ -5,12 +5,22 @@ project(Core)
 # ----------------------------
 add_library(core STATIC)
 
+# Only source files (implementation)
 target_sources(core PRIVATE
     src/Engine.cpp
-)
+    src/Mara/Window.cpp  
+    src/Mara/AppLayer.cpp
+    src/Mara/VBO.cpp
+    src/Mara/VAO.cpp
+    src/Mara/EBO.cpp
+    src/Mara/Shader.cpp
+ )
 
+# ----------------------------
+# Public headers
+# ----------------------------
 target_include_directories(core PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Mara/include
 )
 
 # ----------------------------
@@ -19,9 +29,9 @@ target_include_directories(core PUBLIC
 find_package(OpenGL REQUIRED)
 target_link_libraries(core PUBLIC OpenGL::GL)
 
-# =========================================================
-# VENDOR PATH
-# =========================================================
+# ----------------------------
+# Vendor path
+# ----------------------------
 set(VENDOR_DIR ${CMAKE_SOURCE_DIR}/vendor)
 
 # ----------------------------
@@ -39,32 +49,30 @@ add_subdirectory(
 target_link_libraries(core PUBLIC glfw)
 
 # ----------------------------
-# GLAD (generated via CMake)
+# GLAD (prebuilt)
 # ----------------------------
-add_subdirectory(
-    ${VENDOR_DIR}/glad/cmake
-    ${CMAKE_BINARY_DIR}/vendor/glad
+# Use pre-generated glad.c and headers
+add_library(glad STATIC
+    ${VENDOR_DIR}/glad/src/glad.c
 )
 
-glad_add_library(glad STATIC
-    API gl:core=4.6
+target_include_directories(glad PUBLIC
+    ${VENDOR_DIR}/glad/include
 )
 
 target_link_libraries(core PUBLIC glad)
 
 # ----------------------------
-# GLM (header-only)
+# GLM
 # ----------------------------
 add_library(glm INTERFACE)
-
 target_include_directories(glm INTERFACE
     ${VENDOR_DIR}/glm
 )
-
 target_link_libraries(core PUBLIC glm)
 
 # ----------------------------
-# ImGui (Docking)
+# ImGui docking
 # ----------------------------
 add_library(imgui STATIC
     ${VENDOR_DIR}/imgui/imgui.cpp
@@ -72,10 +80,9 @@ add_library(imgui STATIC
     ${VENDOR_DIR}/imgui/imgui_tables.cpp
     ${VENDOR_DIR}/imgui/imgui_widgets.cpp
     ${VENDOR_DIR}/imgui/imgui_demo.cpp
-
     ${VENDOR_DIR}/imgui/backends/imgui_impl_glfw.cpp
     ${VENDOR_DIR}/imgui/backends/imgui_impl_opengl3.cpp
-)
+  )
 
 target_include_directories(imgui PUBLIC
     ${VENDOR_DIR}/imgui
@@ -83,20 +90,14 @@ target_include_directories(imgui PUBLIC
 )
 
 target_link_libraries(imgui PUBLIC glfw OpenGL::GL)
-
 target_link_libraries(core PUBLIC imgui)
 
 # ----------------------------
-# Windows (optional but recommended)
+# Platform-specific libs
 # ----------------------------
 if(WIN32)
     target_link_libraries(core PUBLIC opengl32)
-endif()
-
-# ----------------------------
-# Linux system libs
-# ----------------------------
-if(UNIX AND NOT APPLE)
+elseif(UNIX AND NOT APPLE)
     target_link_libraries(core PUBLIC
         dl
         pthread
