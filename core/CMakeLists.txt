@@ -18,6 +18,8 @@ target_sources(core PRIVATE
     src/Mara/Renderer.cpp
     src/Mara/ImGuiLayer.cpp
     src/Mara/Framebuffer.cpp
+    src/Mara/Input.cpp
+    src/Mara/PerspectiveCamera.cpp
  )
 
 # ----------------------------
