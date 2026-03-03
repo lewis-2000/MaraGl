@@ -2,3 +2,33 @@ build/
 out/
 dist/
 .vs/
+
+resources/models/
+
+# Ignore Visual Studio Code settings
+.vscode/
+# Ignore user-specific files
+*.suo
+*.user
+# Ignore build artifacts
+*.obj
+*.exe
+*.dll
+*.pdb
+*.log
+# Ignore generated files
+*.g.cs
+*.g.i.cs
+*.g.h.cs
+*.g.cpp
+# Ignore NuGet packages
+packages/
+# Ignore ReSharper files
+_ReSharper*/
+*.ReSharper
+# Ignore Rider files
+.idea/
+# Ignore test results
+TestResults/
+# Ignore publish output
+publish/

@@ -1,4 +1,5 @@
 #include "ImGuiLayer.h"
+#include "Renderer.h"
 
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
@@ -36,7 +37,8 @@ namespace MaraGl
         // Enable viewports: allows windows to float outside the main window
         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
-        ImGui::StyleColorsDark();
+        // ImGui::StyleColorsDark();
+        ImGui::StyleColorsLight();
 
         // Initialize GLFW and OpenGL3 backends for rendering ImGui
         ImGui_ImplGlfw_InitForOpenGL(m_Window.getWindow(), true);
@@ -97,7 +99,7 @@ namespace MaraGl
     // Layout: Inspector (left 20%) | Scene (center) | Hierarchy (right 20%)
     //         Console + Assets (bottom 25%)
     // \param framebuffer Pointer to the framebuffer to display in the Scene viewport
-    void ImGuiLayer::renderDockspace(Framebuffer *framebuffer)
+    void ImGuiLayer::renderDockspace(Framebuffer *framebuffer, Renderer *renderer)
     {
         ImGuiViewport *viewport = ImGui::GetMainViewport();
         // Set dockspace to fill the entire viewport
@@ -132,22 +134,23 @@ namespace MaraGl
                 ImGui::DockBuilderSetNodeSize(dockspaceID, viewport->WorkSize);
 
                 // --- Define dock layout ---
-                // Split left ~20% for Inspector
+
+                // Split left ~20% for Inspector + Hierarchy column
                 ImGuiID dock_left = ImGui::DockBuilderSplitNode(
-                    dockspaceID, ImGuiDir_Left, 0.20f, nullptr, &dockspaceID);
+                    dockspaceID, ImGuiDir_Left, 0.40f, nullptr, &dockspaceID);
 
-                // Split right ~20% for Hierarchy (from remaining center)
-                ImGuiID dock_right = ImGui::DockBuilderSplitNode(
-                    dockspaceID, ImGuiDir_Right, 0.20f, nullptr, &dockspaceID);
+                // Split Inspector (top) and Hierarchy (bottom) within left column
+                ImGuiID dock_hierarchy = ImGui::DockBuilderSplitNode(
+                    dock_left, ImGuiDir_Down, 0.40f, nullptr, &dock_left);
 
-                // Split bottom ~25% for Console and Assets (from remaining center)
+                // Split bottom ~25% for Console and Assets
                 ImGuiID dock_bottom = ImGui::DockBuilderSplitNode(
                     dockspaceID, ImGuiDir_Down, 0.25f, nullptr, &dockspaceID);
 
-                // Assign windows to their respective dock areas
+                // Assign windows
                 ImGui::DockBuilderDockWindow("Inspector", dock_left);
-                ImGui::DockBuilderDockWindow("Hierarchy", dock_right);
-                ImGui::DockBuilderDockWindow("Scene", dockspaceID); // Central area
+                ImGui::DockBuilderDockWindow("Hierarchy", dock_hierarchy);
+                ImGui::DockBuilderDockWindow("Scene", dockspaceID);
                 ImGui::DockBuilderDockWindow("Console", dock_bottom);
                 ImGui::DockBuilderDockWindow("Assets", dock_bottom);
 
@@ -159,7 +162,31 @@ namespace MaraGl
 
         // Inspector Panel (left): Shows properties of selected entities
         ImGui::Begin("Inspector");
-        ImGui::Text("Entity properties...");
+        ImGui::Text("Render Tweaks");
+
+        if (renderer)
+        {
+            auto &s = renderer->GetSettings();
+
+            ImGui::SeparatorText("Model");
+            ImGui::SliderFloat("Model Scale", &s.modelScale, 0.01f, 5.0f);
+
+            ImGui::SeparatorText("Material");
+            ImGui::Checkbox("Use Texture", &s.useTexture);
+            ImGui::ColorEdit3("Object Color", &s.objectColor.x);
+
+            ImGui::SeparatorText("Light");
+            ImGui::SliderFloat3("Light Direction", &s.lightDir.x, -1.0f, 1.0f);
+            ImGui::ColorEdit3("Light Color", &s.lightColor.x);
+            ImGui::SliderFloat("Ambient", &s.ambientStrength, 0.0f, 1.0f);
+            ImGui::SliderFloat("Specular", &s.specularStrength, 0.0f, 2.0f);
+            ImGui::SliderFloat("Shininess", &s.shininess, 1.0f, 128.0f);
+        }
+        else
+        {
+            ImGui::TextColored(ImVec4(1, 0.4f, 0.4f, 1), "Renderer is null");
+        }
+
         ImGui::End();
 
         // Hierarchy Panel (right): Shows scene tree and entity list

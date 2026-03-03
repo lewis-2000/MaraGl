@@ -2,9 +2,12 @@
 
 #include "Window.h"
 #include "Framebuffer.h"
+#include "Renderer.h"
 
 namespace MaraGl
 {
+    class Renderer; // forward declare
+
     class ImGuiLayer
     {
     public:
@@ -14,7 +17,7 @@ namespace MaraGl
         void begin();
         void end();
 
-        void renderDockspace(Framebuffer *framebuffer = nullptr);
+        void renderDockspace(Framebuffer *framebuffer, Renderer *renderer);
 
     private:
         void init();

@@ -20,6 +20,9 @@ target_sources(core PRIVATE
     src/Mara/Framebuffer.cpp
     src/Mara/Input.cpp
     src/Mara/PerspectiveCamera.cpp
+    src/Mara/Mesh.cpp
+    src/Mara/Model.cpp
+    src/Mara/Timer.cpp
  )
 
 # ----------------------------
@@ -76,6 +79,21 @@ target_include_directories(glm INTERFACE
     ${VENDOR_DIR}/glm
 )
 target_link_libraries(core PUBLIC glm)
+
+# ----------------------------
+# Assimp
+# ----------------------------
+set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "" FORCE)
+set(ASSIMP_INSTALL OFF CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+
+add_subdirectory(
+    ${VENDOR_DIR}/assimp
+    ${CMAKE_BINARY_DIR}/vendor/assimp
+)
+
+target_link_libraries(core PUBLIC assimp)
 
 # ----------------------------
 # ImGui docking

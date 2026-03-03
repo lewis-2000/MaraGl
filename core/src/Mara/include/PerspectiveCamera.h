@@ -1,36 +1,45 @@
 #pragma once
 #include "Camera.h"
-#include <glm/gtc/matrix_transform.hpp>
+#include <glm/glm.hpp>
 
 class PerspectiveCamera : public Camera
 {
 public:
-    PerspectiveCamera(float fov, float aspect, float nearClip, float farClip)
-        : m_FOV(fov), m_Aspect(aspect),
-          m_Near(nearClip), m_Far(farClip)
-    {
-        RecalculateProjection();
-    }
+    PerspectiveCamera(float fov, float aspect, float nearPlane, float farPlane);
 
-    void SetViewportSize(float width, float height)
-    {
-        m_Aspect = width / height;
-        RecalculateProjection();
-    }
+    // default constructor with typical values
+    PerspectiveCamera()
+        : PerspectiveCamera(45.0f, 1280.0f / 720.0f, 0.1f, 100.0f) {}
 
-protected:
-    void RecalculateProjection()
-    {
-        m_Projection = glm::perspective(
-            glm::radians(m_FOV),
-            m_Aspect,
-            m_Near,
-            m_Far);
-    }
+    void Update(float deltaTime) override;
 
-protected:
+    void ProcessKeyboard(float deltaTime, bool forward, bool backward, bool left, bool right);
+    void ProcessMouseMovement(float xoffset, float yoffset);
+
+    void SetAspectRatio(float aspect);
+
+    void MoveForward(float amount) { ProcessKeyboard(amount, false, false, false, false); }
+    void MoveRight(float amount) { ProcessKeyboard(false, false, amount, false, false); }
+    void Rotate(float xoffset, float yoffset) { ProcessMouseMovement(xoffset, yoffset); }
+
+private:
+    void UpdateView();
+    void UpdateProjection();
+
+    glm::vec3 m_Position;
+    glm::vec3 m_Front;
+    glm::vec3 m_Up;
+    glm::vec3 m_Right;
+    glm::vec3 m_WorldUp;
+
+    float m_Yaw;
+    float m_Pitch;
+
     float m_FOV;
     float m_Aspect;
     float m_Near;
     float m_Far;
+
+    float m_MovementSpeed;
+    float m_MouseSensitivity;
 };

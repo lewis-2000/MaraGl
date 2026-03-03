@@ -7,6 +7,11 @@
 #include "Renderer.h"
 #include "ImGuiLayer.h"
 #include "Framebuffer.h"
+#include "Input.h"
+#include "PerspectiveCamera.h"
+#include "Timer.h"
+
+#include "Model.h"
 
 namespace MaraGl
 {
@@ -19,8 +24,6 @@ namespace MaraGl
         void run(); // main loop
 
     private:
-        // void initImGui();
-        // void shutdownImGui();
         void processEvents();
         void render();
 
@@ -29,5 +32,9 @@ namespace MaraGl
         Renderer m_Renderer;
         ImGuiLayer m_ImGuiLayer;
         Framebuffer m_Framebuffer;
+        Input m_Input;
+        Timer m_Timer;
+        PerspectiveCamera m_Camera;
+        Model m_Model{"resources/models/Tree/trees9.obj"};
     };
 }

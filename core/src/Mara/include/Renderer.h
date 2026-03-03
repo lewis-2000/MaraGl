@@ -1,13 +1,27 @@
 #pragma once
 
-#include "VAO.h"
-#include "VBO.h"
-#include "EBO.h"
 #include "Shader.h"
 #include "Framebuffer.h"
+#include "Model.h"
+#include "PerspectiveCamera.h"
+#include <glm/glm.hpp>
 
 namespace MaraGl
 {
+    struct RenderSettings
+    {
+        float modelScale = 0.2f;
+        bool useTexture = true;
+
+        glm::vec3 lightDir = glm::vec3(-0.5f, -1.0f, -0.2f);
+        glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
+        glm::vec3 objectColor = glm::vec3(0.9f, 0.85f, 0.8f);
+
+        float ambientStrength = 0.30f;
+        float specularStrength = 0.25f;
+        float shininess = 32.0f;
+    };
+
     class Renderer
     {
     public:
@@ -15,13 +29,18 @@ namespace MaraGl
         ~Renderer();
 
         void clear(float r, float g, float b, float a);
-        void draw();
         void drawToFramebuffer(Framebuffer &framebuffer);
 
+        void DrawModel(Model &model, Shader &shader);
+
+        // Camera accessor
+        PerspectiveCamera &GetCamera() { return *m_Camera; }
+        RenderSettings &GetSettings() { return m_Settings; }
+
     private:
-        VAO m_VAO;
-        VBO *m_VBO;
-        EBO *m_EBO;
         Shader *m_Shader;
+        PerspectiveCamera *m_Camera;
+        Model *m_Model;
+        RenderSettings m_Settings;
     };
 }

@@ -1,49 +1,75 @@
-#pragma once
 #include "PerspectiveCamera.h"
-#include "Input.h"
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/constants.hpp>
+#include <algorithm>
 
-class EditorCamera : public PerspectiveCamera
+PerspectiveCamera::PerspectiveCamera(float fov, float aspect, float nearPlane, float farPlane)
+    : m_FOV(fov), m_Aspect(aspect), m_Near(nearPlane), m_Far(farPlane),
+      m_Position(0.0f, 0.0f, 12.0f), m_Front(0.0f, -0.2f, -1.0f),
+      m_WorldUp(0.0f, 1.0f, 0.0f), m_Yaw(-90.0f), m_Pitch(10.0f),
+      m_MovementSpeed(3.0f), m_MouseSensitivity(0.1f)
 {
-public:
-    EditorCamera(float fov, float aspect, float nearClip, float farClip)
-        : PerspectiveCamera(fov, aspect, nearClip, farClip)
-    {
-    }
+    UpdateView();
+    UpdateProjection();
+}
 
-    void Update(float dt) override
-    {
-        const float speed = 5.0f;
-        const float sensitivity = 0.002f;
+void PerspectiveCamera::Update(float deltaTime)
+{
+    // For now, just recompute matrices, will be called every frame by Renderer, update Later for optimization to only update when needed (e.g., on input)
+    UpdateView();
+    UpdateProjection();
+}
 
-        if (Input::IsMouseButtonPressed(GLFW_MOUSE_BUTTON_RIGHT))
-        {
-            m_Yaw += Input::GetMouseDeltaX() * sensitivity;
-            m_Pitch -= Input::GetMouseDeltaY() * sensitivity;
+void PerspectiveCamera::ProcessKeyboard(float deltaTime, bool forward, bool backward, bool left, bool right)
+{
+    float velocity = m_MovementSpeed * deltaTime;
+    if (forward)
+        m_Position += m_Front * velocity;
+    if (backward)
+        m_Position -= m_Front * velocity;
+    if (left)
+        m_Position -= m_Right * velocity;
+    if (right)
+        m_Position += m_Right * velocity;
 
-            m_Pitch = glm::clamp(m_Pitch, -1.5f, 1.5f);
+    UpdateView();
+}
 
-            glm::vec3 forward = {
-                cos(m_Yaw) * cos(m_Pitch),
-                sin(m_Pitch),
-                sin(m_Yaw) * cos(m_Pitch)};
+void PerspectiveCamera::ProcessMouseMovement(float xoffset, float yoffset)
+{
+    xoffset *= m_MouseSensitivity;
+    yoffset *= m_MouseSensitivity;
 
-            glm::vec3 right = glm::normalize(glm::cross(forward, {0, 1, 0}));
+    m_Yaw += xoffset;
+    m_Pitch += yoffset;
 
-            if (Input::IsKeyPressed(GLFW_KEY_W))
-                m_Position += forward * speed * dt;
-            if (Input::IsKeyPressed(GLFW_KEY_S))
-                m_Position -= forward * speed * dt;
-            if (Input::IsKeyPressed(GLFW_KEY_A))
-                m_Position -= right * speed * dt;
-            if (Input::IsKeyPressed(GLFW_KEY_D))
-                m_Position += right * speed * dt;
+    // Clamp pitch
+    m_Pitch = std::clamp(m_Pitch, -89.0f, 89.0f);
 
-            m_View = glm::lookAt(m_Position, m_Position + forward, {0, 1, 0});
-        }
-    }
+    // Recalculate front, right, up
+    glm::vec3 front;
+    front.x = cos(glm::radians(m_Yaw)) * cos(glm::radians(m_Pitch));
+    front.y = sin(glm::radians(m_Pitch));
+    front.z = sin(glm::radians(m_Yaw)) * cos(glm::radians(m_Pitch));
+    m_Front = glm::normalize(front);
+    m_Right = glm::normalize(glm::cross(m_Front, m_WorldUp));
+    m_Up = glm::normalize(glm::cross(m_Right, m_Front));
 
-private:
-    glm::vec3 m_Position = {0.0f, 0.0f, 3.0f};
-    float m_Yaw = -glm::half_pi<float>();
-    float m_Pitch = 0.0f;
-};
+    UpdateView();
+}
+
+void PerspectiveCamera::SetAspectRatio(float aspect)
+{
+    m_Aspect = aspect;
+    UpdateProjection();
+}
+
+void PerspectiveCamera::UpdateView()
+{
+    m_View = glm::lookAt(m_Position, m_Position + m_Front, m_WorldUp);
+}
+
+void PerspectiveCamera::UpdateProjection()
+{
+    m_Projection = glm::perspective(glm::radians(m_FOV), m_Aspect, m_Near, m_Far);
+}
