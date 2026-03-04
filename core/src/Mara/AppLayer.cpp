@@ -34,22 +34,15 @@ namespace MaraGl
         m_Timer.Update();
         float deltaTime = m_Timer.GetDeltaTime();
 
+        // Always update input first, before ImGui
         Input::Update();
 
+        // Update camera - only process input if ScenePanel is focused
+        ScenePanel *scenePanel = m_ImGuiLayer.GetScenePanel();
+        bool sceneFocused = scenePanel ? scenePanel->IsFocused() : false;
+
         auto &camera = m_Renderer.GetCamera();
-        float speed = 5.0f * deltaTime;
-
-        if (Input::IsKeyPressed(GLFW_KEY_W))
-            camera.MoveForward(speed);
-        if (Input::IsKeyPressed(GLFW_KEY_S))
-            camera.MoveForward(-speed);
-        if (Input::IsKeyPressed(GLFW_KEY_A))
-            camera.MoveRight(-speed);
-        if (Input::IsKeyPressed(GLFW_KEY_D))
-            camera.MoveRight(speed);
-
-        camera.Rotate(Input::GetMouseDeltaX() * 0.1f, Input::GetMouseDeltaY() * 0.1f);
-        camera.Update(deltaTime);
+        camera.Update(deltaTime, sceneFocused);
 
         // Compile once, reuse every frame
         static Shader shader("resources/shaders/basic.vert", "resources/shaders/basic.frag");
@@ -59,7 +52,13 @@ namespace MaraGl
         glViewport(0, 0, m_Framebuffer.getWidth(), m_Framebuffer.getHeight());
         glEnable(GL_DEPTH_TEST);
         m_Renderer.clear(0.1f, 0.2f, 0.3f, 1.0f);
-        m_Renderer.DrawModel(m_Model, shader);
+
+        // Only render the model if it's been loaded
+        if (m_ModelLoaded && m_Model)
+        {
+            m_Renderer.DrawModel(*m_Model, shader);
+        }
+
         m_Framebuffer.unbind();
 
         // 2) Render ImGui to default framebuffer
@@ -72,6 +71,31 @@ namespace MaraGl
         m_ImGuiLayer.end();
 
         glfwSwapBuffers(m_Window.getWindow());
+
+        // Check if user requested a model load from ModelLoaderPanel
+        ModelLoaderPanel *loaderPanel = m_ImGuiLayer.GetModelLoaderPanel();
+        if (loaderPanel && loaderPanel->ShouldLoadModel())
+        {
+            std::string modelPath = loaderPanel->GetSelectedModelPath();
+            try
+            {
+                m_Model = std::make_unique<Model>(modelPath);
+                m_ModelLoaded = true;
+            }
+            catch (const std::exception &e)
+            {
+                std::cerr << "Error loading model from: " << modelPath << "\n"
+                          << e.what() << std::endl;
+            }
+        }
+
+        // Auto-load default model AFTER ImGui has rendered for 2 frames (window is now visible)
+        m_FrameCount++;
+        if (!m_ModelLoaded && m_FrameCount >= 2)
+        {
+            m_Model = std::make_unique<Model>("resources/models/Tree/trees9.obj");
+            m_ModelLoaded = true;
+        }
     }
 
     void AppLayer::run()

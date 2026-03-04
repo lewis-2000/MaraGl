@@ -23,6 +23,12 @@ target_sources(core PRIVATE
     src/Mara/Mesh.cpp
     src/Mara/Model.cpp
     src/Mara/Timer.cpp
+    src/Mara/Entity.cpp
+    src/Mara/Scene.cpp
+    src/Mara/EditorTimelinePanel.cpp
+    src/Mara/HierarchyPanel.cpp
+    src/Mara/ModelLoaderPanel.cpp
+    
  )
 
 # ----------------------------

@@ -22,7 +22,7 @@ namespace MaraGl
         shutdown();
     }
 
-    // Initializes ImGui context, backends (GLFW + OpenGL3), and loads fonts
+    // Initializes ImGui context, backends (GLFW + OpenGL3), loads fonts, and creates panels
     // Called during construction
     void ImGuiLayer::init()
     {
@@ -95,157 +95,88 @@ namespace MaraGl
         }
     }
 
-    // Renders the editor UI layout with dockspace and all editor panels
-    // Layout: Inspector (left 20%) | Scene (center) | Hierarchy (right 20%)
-    //         Console + Assets (bottom 25%)
-    // \param framebuffer Pointer to the framebuffer to display in the Scene viewport
     void ImGuiLayer::renderDockspace(Framebuffer *framebuffer, Renderer *renderer)
     {
+        // Initialize panels on first call when we have a valid framebuffer
+        if (!m_PanelsInitialized)
+        {
+            m_Framebuffer = framebuffer;
+            m_PanelManager.AddPanel<InspectorPanel>();
+            m_ScenePanel = m_PanelManager.AddPanel<ScenePanel>(m_Framebuffer);
+            m_PanelManager.AddPanel<HierarchyPanel>();
+            m_ModelLoaderPanel = m_PanelManager.AddPanel<ModelLoaderPanel>();
+            // m_PanelManager.AddPanel<ConsolePanel>();
+            m_PanelManager.AddPanel<EditorTimelinePanel>();
+            // m_PanelManager.AddPanel<AssetsPanel>();
+            m_PanelsInitialized = true;
+        }
+        else if (framebuffer != m_Framebuffer && m_ScenePanel)
+        {
+            // Update framebuffer if it changed
+            m_Framebuffer = framebuffer;
+            m_ScenePanel->SetFramebuffer(m_Framebuffer);
+        }
+
         ImGuiViewport *viewport = ImGui::GetMainViewport();
-        // Set dockspace to fill the entire viewport
         ImGui::SetNextWindowPos(viewport->WorkPos);
         ImGui::SetNextWindowSize(viewport->WorkSize);
         ImGui::SetNextWindowViewport(viewport->ID);
+        ImGui::SetNextWindowSizeConstraints(ImVec2(200, 150), ImVec2(FLT_MAX, FLT_MAX));
 
-        // Configure window flags for dockspace container
-        ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
-                                        ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
-                                        ImGuiWindowFlags_NoBringToFrontOnFocus |
-                                        ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_MenuBar;
+        ImGuiWindowFlags dockspace_flags =
+            ImGuiWindowFlags_NoTitleBar |
+            ImGuiWindowFlags_NoCollapse |
+            ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoBringToFrontOnFocus |
+            ImGuiWindowFlags_NoNavFocus |
+            ImGuiWindowFlags_MenuBar;
 
-        ImGui::Begin("EditorDockspace", nullptr, window_flags);
+        ImGui::Begin("EditorDockspace", nullptr, dockspace_flags);
 
-        ImGuiIO &io = ImGui::GetIO();
         ImGuiID dockspaceID = ImGui::GetID("MainDockspace");
-        if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
-        {
-            ImGui::DockSpace(dockspaceID, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
 
-            // Initialize dock layout only on first frame
-            // Uses static bool to ensure this runs once per application lifetime
+        if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_DockingEnable)
+        {
+            ImGui::DockSpace(dockspaceID, ImVec2(0, 0));
+
             static bool firstTime = true;
             if (firstTime)
             {
                 firstTime = false;
 
-                // Clear previous layout to rebuild from scratch
                 ImGui::DockBuilderRemoveNode(dockspaceID);
                 ImGui::DockBuilderAddNode(dockspaceID, ImGuiDockNodeFlags_DockSpace);
                 ImGui::DockBuilderSetNodeSize(dockspaceID, viewport->WorkSize);
 
-                // --- Define dock layout ---
+                // --- Split main dockspace into left (Inspector+Hierarchy) and right (Scene+Tabs) ---
+                ImGuiID dock_left = ImGui::DockBuilderSplitNode(dockspaceID, ImGuiDir_Left, 0.25f, nullptr, &dockspaceID);
+                ImGuiID dock_right = dockspaceID;
 
-                // Split left ~20% for Inspector + Hierarchy column
-                ImGuiID dock_left = ImGui::DockBuilderSplitNode(
-                    dockspaceID, ImGuiDir_Left, 0.40f, nullptr, &dockspaceID);
+                // --- Split left column vertically: Inspector / Hierarchy ---
+                ImGuiID dock_inspector = ImGui::DockBuilderSplitNode(dock_left, ImGuiDir_Up, 0.5f, nullptr, &dock_left);
+                ImGuiID dock_hierarchy = dock_left;
 
-                // Split Inspector (top) and Hierarchy (bottom) within left column
-                ImGuiID dock_hierarchy = ImGui::DockBuilderSplitNode(
-                    dock_left, ImGuiDir_Down, 0.40f, nullptr, &dock_left);
+                // --- Split right column vertically: Scene / Bottom Tabs ---
+                ImGuiID dock_scene = ImGui::DockBuilderSplitNode(dock_right, ImGuiDir_Up, 0.9f, nullptr, &dock_right);
+                ImGuiID dock_bottom_tabs = dock_right;
 
-                // Split bottom ~25% for Console and Assets
-                ImGuiID dock_bottom = ImGui::DockBuilderSplitNode(
-                    dockspaceID, ImGuiDir_Down, 0.25f, nullptr, &dockspaceID);
-
-                // Assign windows
-                ImGui::DockBuilderDockWindow("Inspector", dock_left);
+                // --- Dock windows to nodes ---
+                ImGui::DockBuilderDockWindow("Inspector", dock_inspector);
                 ImGui::DockBuilderDockWindow("Hierarchy", dock_hierarchy);
-                ImGui::DockBuilderDockWindow("Scene", dockspaceID);
-                ImGui::DockBuilderDockWindow("Console", dock_bottom);
-                ImGui::DockBuilderDockWindow("Assets", dock_bottom);
+                ImGui::DockBuilderDockWindow("Scene", dock_scene);
+                ImGui::DockBuilderDockWindow("Model Loader", dock_bottom_tabs);
+                ImGui::DockBuilderDockWindow("Console", dock_bottom_tabs);
+                ImGui::DockBuilderDockWindow("Assets", dock_bottom_tabs);
+                ImGui::DockBuilderDockWindow("Timeline", dock_bottom_tabs);
 
                 ImGui::DockBuilderFinish(dockspaceID);
             }
         }
 
-        // --- Editor Panels ---
-
-        // Inspector Panel (left): Shows properties of selected entities
-        ImGui::Begin("Inspector");
-        ImGui::Text("Render Tweaks");
-
-        if (renderer)
-        {
-            auto &s = renderer->GetSettings();
-
-            ImGui::SeparatorText("Model");
-            ImGui::SliderFloat("Model Scale", &s.modelScale, 0.01f, 5.0f);
-
-            ImGui::SeparatorText("Material");
-            ImGui::Checkbox("Use Texture", &s.useTexture);
-            ImGui::ColorEdit3("Object Color", &s.objectColor.x);
-
-            ImGui::SeparatorText("Light");
-            ImGui::SliderFloat3("Light Direction", &s.lightDir.x, -1.0f, 1.0f);
-            ImGui::ColorEdit3("Light Color", &s.lightColor.x);
-            ImGui::SliderFloat("Ambient", &s.ambientStrength, 0.0f, 1.0f);
-            ImGui::SliderFloat("Specular", &s.specularStrength, 0.0f, 2.0f);
-            ImGui::SliderFloat("Shininess", &s.shininess, 1.0f, 128.0f);
-        }
-        else
-        {
-            ImGui::TextColored(ImVec4(1, 0.4f, 0.4f, 1), "Renderer is null");
-        }
+        // --- Render all panels via PanelManager ---
+        m_PanelManager.RenderPanels();
 
         ImGui::End();
-
-        // Hierarchy Panel (right): Shows scene tree and entity list
-        ImGui::Begin("Hierarchy");
-        ImGui::Text("Scene objects...");
-        ImGui::End();
-
-        // Scene Viewport Panel (center): Displays rendered scene with framebuffer texture
-        ImGui::Begin("Scene");
-        ImVec2 viewportSize = ImGui::GetContentRegionAvail();
-        // Only render if framebuffer exists and viewport has non-zero dimensions
-        if (framebuffer && viewportSize.x > 0 && viewportSize.y > 0)
-        {
-            // Automatically resize framebuffer if viewport dimensions changed
-            // This keeps the rendered texture in sync with the window size
-            if ((int)viewportSize.x != framebuffer->getWidth() ||
-                (int)viewportSize.y != framebuffer->getHeight())
-            {
-                framebuffer->resize((unsigned int)viewportSize.x, (unsigned int)viewportSize.y);
-            }
-
-            // Display the framebuffer's color attachment as an image
-            // ImVec2(0, 1) to (1, 0) flips Y-axis (OpenGL convention)
-            ImGui::Image(
-                (ImTextureID)(uintptr_t)framebuffer->getColorAttachment(),
-                viewportSize,
-                ImVec2(0, 1), ImVec2(1, 0));
-        }
-        ImGui::End();
-
-        // Console Panel (bottom tab): Displays log output and error messages
-        ImGui::Begin("Console");
-        ImGui::Text("Console output...");
-        ImGui::End();
-
-        // Assets Panel (bottom tab): Browser for project resources and content
-        ImGui::Begin("Assets");
-        ImGui::Text("Assets browser...");
-
-        {
-            // Sample asset thumbnails area
-            // TODO: Replace with actual asset database and dynamic thumbnail loading
-            ImGui::BeginChild("AssetThumbnails", ImVec2(0, 200), true);
-            for (int i = 0; i < 10; i++)
-            {
-                ImGui::Image((ImTextureID)(uintptr_t)framebuffer->getColorAttachment(), ImVec2(64, 64));
-                // Display 5 thumbnails per row
-                if ((i + 1) % 5 != 0)
-                    ImGui::SameLine();
-            }
-            ImGui::EndChild();
-        }
-        ImGui::End();
-
-        ImGui::End(); // End EditorDockspace
-
-        // --- Constraints ---
-        // Set minimum size constraint for dockspace containers
-        ImGui::SetNextWindowSizeConstraints(ImVec2(200, 200), ImVec2(FLT_MAX, FLT_MAX));
     }
-
 }

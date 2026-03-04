@@ -3,7 +3,7 @@
 #include "Shader.h"
 #include "Framebuffer.h"
 #include "Model.h"
-#include "PerspectiveCamera.h"
+#include "EditorCamera.h"
 #include <glm/glm.hpp>
 
 namespace MaraGl
@@ -34,12 +34,12 @@ namespace MaraGl
         void DrawModel(Model &model, Shader &shader);
 
         // Camera accessor
-        PerspectiveCamera &GetCamera() { return *m_Camera; }
+        EditorCamera &GetCamera() { return *m_Camera; }
         RenderSettings &GetSettings() { return m_Settings; }
 
     private:
         Shader *m_Shader;
-        PerspectiveCamera *m_Camera;
+        EditorCamera *m_Camera;
         Model *m_Model;
         RenderSettings m_Settings;
     };

@@ -12,6 +12,8 @@
 #include "Timer.h"
 
 #include "Model.h"
+#include "ModelLoaderPanel.h"
+#include <memory>
 
 namespace MaraGl
 {
@@ -35,6 +37,8 @@ namespace MaraGl
         Input m_Input;
         Timer m_Timer;
         PerspectiveCamera m_Camera;
-        Model m_Model{"resources/models/Tree/trees9.obj"};
+        std::unique_ptr<Model> m_Model;
+        bool m_ModelLoaded = false;
+        int m_FrameCount = 0;
     };
 }

@@ -11,8 +11,8 @@ namespace MaraGl
             "resources/shaders/basic.vert",
             "resources/shaders/basic.frag");
 
-        // Concrete camera
-        m_Camera = new PerspectiveCamera(45.0f, 1280.0f / 720.0f, 0.1f, 100.0f);
+        // Use EditorCamera for input-responsive viewport
+        m_Camera = new EditorCamera(45.0f, 1280.0f / 720.0f, 0.1f, 100.0f);
         m_Shader->use();
         m_Shader->setMat4("view", m_Camera->GetView());
         m_Shader->setMat4("projection", m_Camera->GetProjection());
