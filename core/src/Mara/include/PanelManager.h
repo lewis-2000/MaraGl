@@ -19,6 +19,20 @@ namespace MaraGl
             return raw;
         }
 
+        void Update(float deltaTime)
+        {
+            for (auto &panel : m_Panels)
+            {
+                // Attempt to call Update if panel has it
+                // Use dynamic_cast to check for EditorTimelinePanel specifically
+                // This is a simple approach for now - Will update later to have a more robust system for panel types and updates
+                if (panel)
+                {
+                    panel->Update(deltaTime);
+                }
+            }
+        }
+
         void RenderPanels()
         {
             for (auto &panel : m_Panels)

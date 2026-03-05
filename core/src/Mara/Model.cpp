@@ -3,6 +3,7 @@
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <iostream>
+#include <filesystem>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -35,7 +36,13 @@ void Model::loadModel(const std::string &path)
         return;
     }
 
-    directory = path.substr(0, path.find_last_of('/'));
+    // Use std::filesystem for proper path handling across platforms
+    std::filesystem::path modelPath(path);
+    directory = modelPath.parent_path().string();
+
+    std::cout << "Model loaded from: " << path << std::endl;
+    std::cout << "Directory extracted: " << directory << std::endl;
+
     processNode(scene->mRootNode, scene);
 }
 
@@ -131,12 +138,15 @@ std::vector<Texture> Model::loadMaterialTextures(
         mat->GetTexture(type, i, &str);
 
         std::string filename = std::string(str.C_Str());
-        filename = directory + "/" + filename;
+
+        // Use std::filesystem for proper path construction
+        std::filesystem::path texturePath = std::filesystem::path(directory) / filename;
+        std::string fullPath = texturePath.string();
 
         bool skip = false;
         for (auto &loaded : texturesLoaded)
         {
-            if (loaded.path == filename)
+            if (loaded.path == fullPath)
             {
                 textures.push_back(loaded);
                 skip = true;
@@ -146,8 +156,15 @@ std::vector<Texture> Model::loadMaterialTextures(
 
         if (!skip)
         {
+            // Check if file exists before trying to load
+            if (!std::filesystem::exists(fullPath))
+            {
+                std::cout << "Texture file not found: " << fullPath << std::endl;
+                continue;
+            }
+
             Texture texture(
-                filename.c_str(),
+                fullPath.c_str(),
                 GL_TEXTURE_2D,
                 GL_TEXTURE0,
                 GL_RGB,
@@ -156,12 +173,14 @@ std::vector<Texture> Model::loadMaterialTextures(
             glGenTextures(1, &texture.ID);
 
             int width, height, nrChannels;
-            unsigned char *data = stbi_load(filename.c_str(),
+            unsigned char *data = stbi_load(fullPath.c_str(),
                                             &width, &height,
                                             &nrChannels, 0);
 
             if (data)
             {
+                std::cout << "Successfully loaded texture: " << fullPath << std::endl;
+
                 GLenum format = GL_RGB;
                 if (nrChannels == 1)
                     format = GL_RED;
@@ -184,14 +203,14 @@ std::vector<Texture> Model::loadMaterialTextures(
                 stbi_image_free(data);
 
                 texture.typeName = typeName;
-                texture.path = filename;
+                texture.path = fullPath;
 
                 textures.push_back(texture);
                 texturesLoaded.push_back(texture);
             }
             else
             {
-                std::cout << "Failed to load texture: " << filename << std::endl;
+                std::cout << "Failed to load texture data from: " << fullPath << std::endl;
                 stbi_image_free(data);
             }
         }

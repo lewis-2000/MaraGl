@@ -1,31 +1,65 @@
 #pragma once
 #include <string>
 #include <memory>
-#include "Transform.h"
+#include <cstdint>
 
-class Model;
-class Animator;
-
-class Entity
+namespace MaraGl
 {
-public:
-    Entity(uint32_t id, const std::string &name);
+    class ComponentRegistry;
 
-    uint32_t GetID() const { return m_ID; }
-    const std::string &GetName() const { return m_Name; }
+    class Entity
+    {
+    public:
+        Entity(uint32_t id, ComponentRegistry *registry);
 
-    Transform transform;
+        uint32_t GetID() const { return m_ID; }
 
-    void SetModel(std::shared_ptr<Model> model);
-    std::shared_ptr<Model> GetModel() const;
+        ComponentRegistry *GetRegistry() const { return m_Registry; }
 
-    void SetAnimator(std::shared_ptr<Animator> animator);
-    std::shared_ptr<Animator> GetAnimator() const;
+        // Template methods for component access
+        template <typename T>
+        T *GetComponent();
 
-private:
-    uint32_t m_ID;
-    std::string m_Name;
+        template <typename T>
+        bool HasComponent();
 
-    std::shared_ptr<Model> m_Model;
-    std::shared_ptr<Animator> m_Animator;
-};
+        template <typename T, typename... Args>
+        T &AddComponent(Args &&...args);
+
+        template <typename T>
+        void RemoveComponent();
+
+    private:
+        uint32_t m_ID;
+        ComponentRegistry *m_Registry;
+    };
+}
+
+#include "ComponentRegistry.h"
+
+namespace MaraGl
+{
+    template <typename T>
+    T *Entity::GetComponent()
+    {
+        return m_Registry->GetComponent<T>(m_ID);
+    }
+
+    template <typename T>
+    bool Entity::HasComponent()
+    {
+        return m_Registry->HasComponent<T>(m_ID);
+    }
+
+    template <typename T, typename... Args>
+    T &Entity::AddComponent(Args &&...args)
+    {
+        return m_Registry->AddComponent<T>(m_ID, std::forward<Args>(args)...);
+    }
+
+    template <typename T>
+    void Entity::RemoveComponent()
+    {
+        m_Registry->RemoveComponent<T>(m_ID);
+    }
+}

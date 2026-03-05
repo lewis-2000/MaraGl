@@ -31,16 +31,17 @@ namespace MaraGl
         void clear(float r, float g, float b, float a);
         void drawToFramebuffer(Framebuffer &framebuffer);
 
-        void DrawModel(Model &model, Shader &shader);
+        void DrawModel(::Model &model, ::Shader &shader);
+        void DrawModel(::Model &model, ::Shader &shader, const glm::mat4 &transform);
 
         // Camera accessor
         EditorCamera &GetCamera() { return *m_Camera; }
         RenderSettings &GetSettings() { return m_Settings; }
 
     private:
-        Shader *m_Shader;
+        ::Shader *m_Shader;
         EditorCamera *m_Camera;
-        Model *m_Model;
+        ::Model *m_Model;
         RenderSettings m_Settings;
     };
 }

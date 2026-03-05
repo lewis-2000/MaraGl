@@ -23,6 +23,7 @@ namespace MaraGl
         virtual void OnAttach() {}
         virtual void OnDetach() {}
         virtual void OnImGuiRender() = 0;
+        virtual void Update(float deltaTime) {} // Called each frame for logic updates
 
         bool IsOpen() const { return m_Open; }
         void SetOpen(bool open) { m_Open = open; }

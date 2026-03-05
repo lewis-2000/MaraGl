@@ -10,6 +10,7 @@
 #include "Input.h"
 #include "PerspectiveCamera.h"
 #include "Timer.h"
+#include "Scene.h"
 
 #include "Model.h"
 #include "ModelLoaderPanel.h"
@@ -25,11 +26,11 @@ namespace MaraGl
 
         void run(); // main loop
 
+        void LoadSkybox(const std::string &path);
+
     private:
         void processEvents();
         void render();
-
-    private:
         Window m_Window;
         Renderer m_Renderer;
         ImGuiLayer m_ImGuiLayer;
@@ -37,7 +38,7 @@ namespace MaraGl
         Input m_Input;
         Timer m_Timer;
         PerspectiveCamera m_Camera;
-        std::unique_ptr<Model> m_Model;
+        Scene m_Scene;
         bool m_ModelLoaded = false;
         int m_FrameCount = 0;
     };

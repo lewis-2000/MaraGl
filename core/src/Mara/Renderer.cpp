@@ -42,7 +42,7 @@ namespace MaraGl
         framebuffer.unbind();
     }
 
-    void Renderer::DrawModel(Model &model, Shader &shader)
+    void Renderer::DrawModel(::Model &model, ::Shader &shader)
     {
         shader.use();
 
@@ -50,6 +50,30 @@ namespace MaraGl
         modelMat = glm::scale(modelMat, glm::vec3(m_Settings.modelScale));
 
         shader.setMat4("model", modelMat);
+        shader.setMat4("view", m_Camera->GetView());
+        shader.setMat4("projection", m_Camera->GetProjection());
+
+        shader.setVec3("uViewPos", m_Camera->GetPosition());
+        shader.setVec3("uLightDir", glm::normalize(m_Settings.lightDir));
+        shader.setVec3("uLightColor", m_Settings.lightColor);
+        shader.setVec3("uObjectColor", m_Settings.objectColor);
+
+        shader.setBool("uUseTexture", m_Settings.useTexture);
+        shader.setInt("uDiffuseMap", 0);
+
+        shader.setFloat("uAmbientStrength", m_Settings.ambientStrength);
+        shader.setFloat("uSpecularStrength", m_Settings.specularStrength);
+        shader.setFloat("uShininess", m_Settings.shininess);
+
+        model.Draw(shader);
+    }
+
+    void Renderer::DrawModel(::Model &model, ::Shader &shader, const glm::mat4 &transform)
+    {
+        shader.use();
+
+        // Use provided transform matrix
+        shader.setMat4("model", transform);
         shader.setMat4("view", m_Camera->GetView());
         shader.setMat4("projection", m_Camera->GetProjection());
 

@@ -27,8 +27,14 @@ target_sources(core PRIVATE
     src/Mara/Scene.cpp
     src/Mara/EditorTimelinePanel.cpp
     src/Mara/HierarchyPanel.cpp
+    src/Mara/InspectorPanel.cpp
     src/Mara/ModelLoaderPanel.cpp
+    src/Mara/Plane.cpp
+    src/Mara/Skybox.cpp
+    src/Mara/SceneSettingsPanel.cpp
     
+    
+
  )
 
 # ----------------------------
