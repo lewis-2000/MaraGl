@@ -1,56 +1,30 @@
 #include "Renderer.h"
-
 #include <glad/glad.h>
+#include <glm/gtc/matrix_transform.hpp>
 
 namespace MaraGl
 {
     Renderer::Renderer()
     {
-        // Triangle vertices (position only)
-        float vertices[] =
-            {
-                // positions
-                0.0f, 0.5f, 0.0f,
-                0.5f, -0.5f, 0.0f,
-                -0.5f, -0.5f, 0.0f};
-
-        unsigned int indices[] =
-            {
-                0, 1, 2};
-
-        m_VAO.Bind();
-
-        m_VBO = new VBO(vertices, sizeof(vertices));
-        m_EBO = new EBO(indices, sizeof(indices));
-
-        m_VAO.LinkAttrib(*m_VBO, 0, 3, GL_FLOAT, 3 * sizeof(float), (void *)0);
-
-        m_VAO.Unbind();
-        m_VBO->Unbind();
-        m_EBO->Unbind();
-
+        // Shader
         m_Shader = new Shader(
             "resources/shaders/basic.vert",
             "resources/shaders/basic.frag");
+
+        // Use EditorCamera for input-responsive viewport
+        m_Camera = new EditorCamera(45.0f, 1280.0f / 720.0f, 0.1f, 100.0f);
+        m_Shader->use();
+        m_Shader->setMat4("view", m_Camera->GetView());
+        m_Shader->setMat4("projection", m_Camera->GetProjection());
+        m_Shader->use();
+        m_Shader->setMat4("view", m_Camera->GetView());
+        m_Shader->setMat4("projection", m_Camera->GetProjection());
     }
 
     Renderer::~Renderer()
     {
-        delete m_VBO;
-        delete m_EBO;
         delete m_Shader;
-    }
-
-    void Renderer::drawToFramebuffer(Framebuffer &framebuffer)
-    {
-        framebuffer.bind();
-
-        glEnable(GL_DEPTH_TEST);
-
-        clear(0.1f, 0.2f, 0.3f, 1.0f);
-        draw();
-
-        framebuffer.unbind();
+        delete m_Camera;
     }
 
     void Renderer::clear(float r, float g, float b, float a)
@@ -59,10 +33,62 @@ namespace MaraGl
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
-    void Renderer::draw()
+    void Renderer::drawToFramebuffer(Framebuffer &framebuffer)
     {
-        m_Shader->use();
-        m_VAO.Bind();
-        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+        framebuffer.bind();
+        glEnable(GL_DEPTH_TEST);
+
+        clear(0.1f, 0.2f, 0.3f, 1.0f);
+        framebuffer.unbind();
+    }
+
+    void Renderer::DrawModel(::Model &model, ::Shader &shader)
+    {
+        shader.use();
+
+        glm::mat4 modelMat(1.0f);
+        modelMat = glm::scale(modelMat, glm::vec3(m_Settings.modelScale));
+
+        shader.setMat4("model", modelMat);
+        shader.setMat4("view", m_Camera->GetView());
+        shader.setMat4("projection", m_Camera->GetProjection());
+
+        shader.setVec3("uViewPos", m_Camera->GetPosition());
+        shader.setVec3("uLightDir", glm::normalize(m_Settings.lightDir));
+        shader.setVec3("uLightColor", m_Settings.lightColor);
+        shader.setVec3("uObjectColor", m_Settings.objectColor);
+
+        shader.setBool("uUseTexture", m_Settings.useTexture);
+        shader.setInt("uDiffuseMap", 0);
+
+        shader.setFloat("uAmbientStrength", m_Settings.ambientStrength);
+        shader.setFloat("uSpecularStrength", m_Settings.specularStrength);
+        shader.setFloat("uShininess", m_Settings.shininess);
+
+        model.Draw(shader);
+    }
+
+    void Renderer::DrawModel(::Model &model, ::Shader &shader, const glm::mat4 &transform)
+    {
+        shader.use();
+
+        // Use provided transform matrix
+        shader.setMat4("model", transform);
+        shader.setMat4("view", m_Camera->GetView());
+        shader.setMat4("projection", m_Camera->GetProjection());
+
+        shader.setVec3("uViewPos", m_Camera->GetPosition());
+        shader.setVec3("uLightDir", glm::normalize(m_Settings.lightDir));
+        shader.setVec3("uLightColor", m_Settings.lightColor);
+        shader.setVec3("uObjectColor", m_Settings.objectColor);
+
+        shader.setBool("uUseTexture", m_Settings.useTexture);
+        shader.setInt("uDiffuseMap", 0);
+
+        shader.setFloat("uAmbientStrength", m_Settings.ambientStrength);
+        shader.setFloat("uSpecularStrength", m_Settings.specularStrength);
+        shader.setFloat("uShininess", m_Settings.shininess);
+
+        model.Draw(shader);
     }
 }

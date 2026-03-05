@@ -3,7 +3,7 @@
 
 namespace MaraGl
 {
-    Window::Window(int width, int height, const char* title)
+    Window::Window(int width, int height, const char *title)
         : m_Width(width), m_Height(height)
     {
         // Initialize GLFW
@@ -17,6 +17,7 @@ namespace MaraGl
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        // glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
 #ifdef __APPLE__
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // required on macOS
 #endif
@@ -28,7 +29,7 @@ namespace MaraGl
         m_Window = glfwCreateWindow(m_Width, m_Height, title, nullptr, nullptr);
         if (!m_Window)
         {
-            const char* description;
+            const char *description;
             int code = glfwGetError(&description);
             Logger::error(std::string("Failed to create GLFW window: ") + (description ? description : "unknown"));
             glfwTerminate();
@@ -63,7 +64,7 @@ namespace MaraGl
     {
         // Additional initialization code can go here
     }
-    
+
     void Window::pollEvents()
     {
         glfwPollEvents();

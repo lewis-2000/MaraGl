@@ -1,4 +1,5 @@
 #include "ImGuiLayer.h"
+#include "Renderer.h"
 
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
@@ -21,7 +22,7 @@ namespace MaraGl
         shutdown();
     }
 
-    // Initializes ImGui context, backends (GLFW + OpenGL3), and loads fonts
+    // Initializes ImGui context, backends (GLFW + OpenGL3), loads fonts, and creates panels
     // Called during construction
     void ImGuiLayer::init()
     {
@@ -34,9 +35,11 @@ namespace MaraGl
         // Enable docking: allows windows to be docked and collapsed
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         // Enable viewports: allows windows to float outside the main window
-        io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+        // io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
         ImGui::StyleColorsDark();
+        // ImGui::StyleColorsLight();
+        // ImGui::StyleColorsClassic();
 
         // Initialize GLFW and OpenGL3 backends for rendering ImGui
         ImGui_ImplGlfw_InitForOpenGL(m_Window.getWindow(), true);
@@ -55,6 +58,86 @@ namespace MaraGl
 
         // IMPORTANT: After adding fonts, must rebuild the font atlas for rendering
         io.Fonts->Build();
+
+        ApplyModernEditorStyle(); // Apply custom styling for a modern editor look
+    }
+
+    void ImGuiLayer::ApplyModernEditorStyle()
+    {
+        ImGuiStyle &style = ImGui::GetStyle();
+
+        // ---- Rounding ----
+        style.WindowRounding = 6.0f;
+        style.ChildRounding = 6.0f;
+        style.FrameRounding = 4.0f;
+        style.PopupRounding = 6.0f;
+        style.ScrollbarRounding = 6.0f;
+        style.GrabRounding = 4.0f;
+        style.TabRounding = 5.0f;
+
+        // ---- Spacing ----
+        style.WindowPadding = ImVec2(10, 10);
+        style.FramePadding = ImVec2(8, 4);
+        style.ItemSpacing = ImVec2(8, 6);
+        style.ItemInnerSpacing = ImVec2(6, 4);
+        style.IndentSpacing = 18.0f;
+        style.ScrollbarSize = 14.0f;
+
+        // ---- Borders ----
+        style.WindowBorderSize = 1.0f;
+        style.FrameBorderSize = 0.0f;
+        style.FrameRounding = 3.0f;
+        style.TabBorderSize = 0.0f;
+        style.ChildBorderSize = 0.0f;
+        style.PopupBorderSize = 0.0f;
+
+        auto &c = style.Colors;
+
+        // ---- Backgrounds ----
+        c[ImGuiCol_WindowBg] = ImVec4(0.11f, 0.11f, 0.13f, 1.0f);
+        c[ImGuiCol_ChildBg] = ImVec4(0.14f, 0.14f, 0.16f, 1.0f);
+        c[ImGuiCol_PopupBg] = ImVec4(0.12f, 0.12f, 0.14f, 1.0f);
+
+        // ---- Headers / Selection ----
+        c[ImGuiCol_Header] = ImVec4(0.24f, 0.24f, 0.28f, 1.0f);
+        c[ImGuiCol_HeaderHovered] = ImVec4(0.32f, 0.32f, 0.38f, 1.0f);
+        c[ImGuiCol_HeaderActive] = ImVec4(0.36f, 0.36f, 0.42f, 1.0f);
+
+        // ---- Buttons ----
+        c[ImGuiCol_Button] = ImVec4(0.18f, 0.18f, 0.22f, 1.0f);
+        c[ImGuiCol_ButtonHovered] = ImVec4(0.28f, 0.28f, 0.34f, 1.0f);
+        c[ImGuiCol_ButtonActive] = ImVec4(0.35f, 0.35f, 0.42f, 1.0f);
+
+        // ---- Tabs ----
+        c[ImGuiCol_Tab] = ImVec4(0.18f, 0.18f, 0.22f, 1.0f);
+        c[ImGuiCol_TabHovered] = ImVec4(0.32f, 0.32f, 0.38f, 1.0f);
+        c[ImGuiCol_TabActive] = ImVec4(0.28f, 0.28f, 0.34f, 1.0f);
+        c[ImGuiCol_TabUnfocused] = c[ImGuiCol_Tab];
+        c[ImGuiCol_TabUnfocusedActive] = c[ImGuiCol_TabActive];
+
+        // ---- Title bar ----
+        c[ImGuiCol_TitleBg] = ImVec4(0.10f, 0.10f, 0.12f, 1.0f);
+        c[ImGuiCol_TitleBgActive] = ImVec4(0.14f, 0.14f, 0.18f, 1.0f);
+
+        // ---- Docking ----
+        c[ImGuiCol_DockingPreview] = ImVec4(0.40f, 0.60f, 1.00f, 0.25f);
+        c[ImGuiCol_DockingEmptyBg] = ImVec4(0.08f, 0.08f, 0.10f, 1.0f);
+
+        // ---- Scrollbar ----
+        c[ImGuiCol_ScrollbarBg] = ImVec4(0.10f, 0.10f, 0.12f, 1.0f);
+        c[ImGuiCol_ScrollbarGrab] = ImVec4(0.24f, 0.24f, 0.28f, 1.0f);
+        c[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.30f, 0.30f, 0.36f, 1.0f);
+        c[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.35f, 0.35f, 0.42f, 1.0f);
+
+        // ---- Checkmarks ----
+        c[ImGuiCol_CheckMark] = ImVec4(0.40f, 0.60f, 1.00f, 1.0f);
+        c[ImGuiCol_SliderGrab] = ImVec4(0.40f, 0.60f, 1.00f, 1.0f);
+        c[ImGuiCol_SliderGrabActive] = ImVec4(0.50f, 0.70f, 1.00f, 1.0f);
+        c[ImGuiCol_ButtonActive] = ImVec4(0.50f, 0.70f, 1.00f, 1.0f);
+
+        // ---- Text ----
+        c[ImGuiCol_Text] = ImVec4(0.95f, 0.95f, 0.95f, 1.0f);
+        c[ImGuiCol_TextDisabled] = ImVec4(0.40f, 0.40f, 0.40f, 1.0f);
     }
 
     // Shuts down ImGui and cleans up backend resources
@@ -93,132 +176,133 @@ namespace MaraGl
         }
     }
 
-    // Renders the editor UI layout with dockspace and all editor panels
-    // Layout: Inspector (left 20%) | Scene (center) | Hierarchy (right 20%)
-    //         Console + Assets (bottom 25%)
-    // \param framebuffer Pointer to the framebuffer to display in the Scene viewport
-    void ImGuiLayer::renderDockspace(Framebuffer *framebuffer)
+    void ImGuiLayer::renderDockspace(Framebuffer *framebuffer, Renderer *renderer)
     {
+        // Initialize panels on first call when we have a valid framebuffer
+        if (!m_PanelsInitialized)
+        {
+            m_Framebuffer = framebuffer;
+            m_InspectorPanel = m_PanelManager.AddPanel<InspectorPanel>();
+            m_ScenePanel = m_PanelManager.AddPanel<ScenePanel>(m_Framebuffer);
+            m_HierarchyPanel = m_PanelManager.AddPanel<HierarchyPanel>();
+            m_ModelLoaderPanel = m_PanelManager.AddPanel<ModelLoaderPanel>();
+            m_TimelinePanel = m_PanelManager.AddPanel<EditorTimelinePanel>();
+            m_SceneSettingsPanel = m_PanelManager.AddPanel<SceneSettingsPanel>();
+            // m_PanelManager.AddPanel<ConsolePanel>();
+            // m_PanelManager.AddPanel<AssetsPanel>();
+            m_PanelsInitialized = true;
+
+            // Apply scene pointer to newly created panels
+            if (m_Scene)
+            {
+                if (m_InspectorPanel)
+                {
+                    m_InspectorPanel->SetScene(m_Scene);
+                    m_InspectorPanel->SetHierarchyPanel(m_HierarchyPanel);
+                }
+                if (m_HierarchyPanel)
+                    m_HierarchyPanel->SetScene(m_Scene);
+                if (m_TimelinePanel)
+                {
+                    m_TimelinePanel->SetScene(m_Scene);
+                    m_TimelinePanel->SetHierarchyPanel(m_HierarchyPanel);
+                }
+                if (m_SceneSettingsPanel)
+                    m_SceneSettingsPanel->SetScene(m_Scene);
+            }
+        }
+        else if (framebuffer != m_Framebuffer && m_ScenePanel)
+        {
+            // Update framebuffer if it changed
+            m_Framebuffer = framebuffer;
+            m_ScenePanel->SetFramebuffer(m_Framebuffer);
+        }
+
         ImGuiViewport *viewport = ImGui::GetMainViewport();
-        // Set dockspace to fill the entire viewport
         ImGui::SetNextWindowPos(viewport->WorkPos);
         ImGui::SetNextWindowSize(viewport->WorkSize);
         ImGui::SetNextWindowViewport(viewport->ID);
+        ImGui::SetNextWindowSizeConstraints(ImVec2(200, 150), ImVec2(FLT_MAX, FLT_MAX));
 
-        // Configure window flags for dockspace container
-        ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
-                                        ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
-                                        ImGuiWindowFlags_NoBringToFrontOnFocus |
-                                        ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_MenuBar;
+        ImGuiWindowFlags dockspace_flags =
+            ImGuiWindowFlags_NoTitleBar |
+            ImGuiWindowFlags_NoCollapse |
+            ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoBringToFrontOnFocus |
+            ImGuiWindowFlags_NoNavFocus |
+            ImGuiWindowFlags_MenuBar;
 
-        ImGui::Begin("EditorDockspace", nullptr, window_flags);
+        ImGui::Begin("EditorDockspace", nullptr, dockspace_flags);
 
-        ImGuiIO &io = ImGui::GetIO();
         ImGuiID dockspaceID = ImGui::GetID("MainDockspace");
-        if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
-        {
-            ImGui::DockSpace(dockspaceID, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
 
-            // Initialize dock layout only on first frame
-            // Uses static bool to ensure this runs once per application lifetime
+        if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_DockingEnable)
+        {
+            ImGui::DockSpace(dockspaceID, ImVec2(0, 0));
+
             static bool firstTime = true;
             if (firstTime)
             {
                 firstTime = false;
 
-                // Clear previous layout to rebuild from scratch
                 ImGui::DockBuilderRemoveNode(dockspaceID);
                 ImGui::DockBuilderAddNode(dockspaceID, ImGuiDockNodeFlags_DockSpace);
                 ImGui::DockBuilderSetNodeSize(dockspaceID, viewport->WorkSize);
 
-                // --- Define dock layout ---
-                // Split left ~20% for Inspector
-                ImGuiID dock_left = ImGui::DockBuilderSplitNode(
-                    dockspaceID, ImGuiDir_Left, 0.20f, nullptr, &dockspaceID);
+                // --- Split main dockspace into left (Inspector+Hierarchy) and right (Scene+Tabs) ---
+                ImGuiID dock_left = ImGui::DockBuilderSplitNode(dockspaceID, ImGuiDir_Left, 0.40f, nullptr, &dockspaceID);
+                ImGuiID dock_right = dockspaceID;
 
-                // Split right ~20% for Hierarchy (from remaining center)
-                ImGuiID dock_right = ImGui::DockBuilderSplitNode(
-                    dockspaceID, ImGuiDir_Right, 0.20f, nullptr, &dockspaceID);
+                // --- Split left column vertically: Inspector / Hierarchy ---
+                ImGuiID dock_inspector = ImGui::DockBuilderSplitNode(dock_left, ImGuiDir_Up, 0.55f, nullptr, &dock_left);
+                ImGuiID dock_hierarchy = dock_left;
 
-                // Split bottom ~25% for Console and Assets (from remaining center)
-                ImGuiID dock_bottom = ImGui::DockBuilderSplitNode(
-                    dockspaceID, ImGuiDir_Down, 0.25f, nullptr, &dockspaceID);
+                // --- Split right column vertically: Scene / Bottom Tabs ---
+                ImGuiID dock_scene = ImGui::DockBuilderSplitNode(dock_right, ImGuiDir_Up, 0.75f, nullptr, &dock_right);
+                ImGuiID dock_bottom_tabs = dock_right;
 
-                // Assign windows to their respective dock areas
-                ImGui::DockBuilderDockWindow("Inspector", dock_left);
-                ImGui::DockBuilderDockWindow("Hierarchy", dock_right);
-                ImGui::DockBuilderDockWindow("Scene", dockspaceID); // Central area
-                ImGui::DockBuilderDockWindow("Console", dock_bottom);
-                ImGui::DockBuilderDockWindow("Assets", dock_bottom);
+                // --- Dock windows to nodes ---
+                ImGui::DockBuilderDockWindow("Inspector", dock_inspector);
+                ImGui::DockBuilderDockWindow("Hierarchy", dock_hierarchy);
+                ImGui::DockBuilderDockWindow("Scene", dock_scene);
+                ImGui::DockBuilderDockWindow("Scene Settings", dock_bottom_tabs);
+                ImGui::DockBuilderDockWindow("Model Loader", dock_bottom_tabs);
+                ImGui::DockBuilderDockWindow("Console", dock_bottom_tabs);
+                ImGui::DockBuilderDockWindow("Assets", dock_bottom_tabs);
+                ImGui::DockBuilderDockWindow("Timeline", dock_bottom_tabs);
 
                 ImGui::DockBuilderFinish(dockspaceID);
             }
         }
 
-        // --- Editor Panels ---
+        // --- Render all panels via PanelManager ---
+        m_PanelManager.RenderPanels();
 
-        // Inspector Panel (left): Shows properties of selected entities
-        ImGui::Begin("Inspector");
-        ImGui::Text("Entity properties...");
         ImGui::End();
-
-        // Hierarchy Panel (right): Shows scene tree and entity list
-        ImGui::Begin("Hierarchy");
-        ImGui::Text("Scene objects...");
-        ImGui::End();
-
-        // Scene Viewport Panel (center): Displays rendered scene with framebuffer texture
-        ImGui::Begin("Scene");
-        ImVec2 viewportSize = ImGui::GetContentRegionAvail();
-        // Only render if framebuffer exists and viewport has non-zero dimensions
-        if (framebuffer && viewportSize.x > 0 && viewportSize.y > 0)
-        {
-            // Automatically resize framebuffer if viewport dimensions changed
-            // This keeps the rendered texture in sync with the window size
-            if ((int)viewportSize.x != framebuffer->getWidth() ||
-                (int)viewportSize.y != framebuffer->getHeight())
-            {
-                framebuffer->resize((unsigned int)viewportSize.x, (unsigned int)viewportSize.y);
-            }
-
-            // Display the framebuffer's color attachment as an image
-            // ImVec2(0, 1) to (1, 0) flips Y-axis (OpenGL convention)
-            ImGui::Image(
-                (ImTextureID)(uintptr_t)framebuffer->getColorAttachment(),
-                viewportSize,
-                ImVec2(0, 1), ImVec2(1, 0));
-        }
-        ImGui::End();
-
-        // Console Panel (bottom tab): Displays log output and error messages
-        ImGui::Begin("Console");
-        ImGui::Text("Console output...");
-        ImGui::End();
-
-        // Assets Panel (bottom tab): Browser for project resources and content
-        ImGui::Begin("Assets");
-        ImGui::Text("Assets browser...");
-
-        {
-            // Sample asset thumbnails area
-            // TODO: Replace with actual asset database and dynamic thumbnail loading
-            ImGui::BeginChild("AssetThumbnails", ImVec2(0, 200), true);
-            for (int i = 0; i < 10; i++)
-            {
-                ImGui::Image((ImTextureID)(uintptr_t)framebuffer->getColorAttachment(), ImVec2(64, 64));
-                // Display 5 thumbnails per row
-                if ((i + 1) % 5 != 0)
-                    ImGui::SameLine();
-            }
-            ImGui::EndChild();
-        }
-        ImGui::End();
-
-        ImGui::End(); // End EditorDockspace
-
-        // --- Constraints ---
-        // Set minimum size constraint for dockspace containers
-        ImGui::SetNextWindowSizeConstraints(ImVec2(200, 200), ImVec2(FLT_MAX, FLT_MAX));
     }
 
+    void ImGuiLayer::SetScene(Scene *scene)
+    {
+        m_Scene = scene;
+
+        // Only apply to panels if they've been initialized
+        if (!m_PanelsInitialized)
+            return;
+
+        if (m_InspectorPanel)
+        {
+            m_InspectorPanel->SetScene(scene);
+            m_InspectorPanel->SetHierarchyPanel(m_HierarchyPanel);
+        }
+        if (m_HierarchyPanel)
+            m_HierarchyPanel->SetScene(scene);
+        if (m_TimelinePanel)
+        {
+            m_TimelinePanel->SetScene(scene);
+            m_TimelinePanel->SetHierarchyPanel(m_HierarchyPanel);
+        }
+        if (m_SceneSettingsPanel)
+            m_SceneSettingsPanel->SetScene(scene);
+    }
 }

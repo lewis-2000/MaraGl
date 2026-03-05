@@ -6,22 +6,23 @@
 
 #include "Shader.h"
 
-class Texture {
+class Texture
+{
 public:
-    GLuint ID;           // OpenGL texture ID
-    GLenum type;         // OpenGL texture target (e.g. GL_TEXTURE_2D)
-    std::string typeName; // "texture_diffuse", "texture_specular", etc.
-    std::string path;    // Path to image file (used to avoid duplicate loads)
+    GLuint ID;
+    std::string typeName;
+    std::string path;
+    GLenum type;
 
-    Texture(const char* image, GLenum texType, GLenum slot, GLenum format, GLenum pixelType);
+    Texture(const char *image,
+            GLenum texType,
+            GLenum slot,
+            GLenum format,
+            GLenum pixelType,
+            const std::string &texName);
 
-    // Assigns a texture unit to a texture
-    void texUnit(Shader& shader, const char* uniform, GLuint unit);
-
-    // Binds a texture
+    void texUnit(Shader &shader, const char *uniform, GLuint unit);
     void Bind();
-    // Unbinds a texture
     void Unbind();
-    // Deletes a texture
     void Delete();
 };
