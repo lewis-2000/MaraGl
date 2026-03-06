@@ -32,16 +32,25 @@ target_sources(core PRIVATE
     src/Mara/Plane.cpp
     src/Mara/Skybox.cpp
     src/Mara/SceneSettingsPanel.cpp
+    src/Mara/LightGizmo.cpp
+    src/Mara/SceneSerializer.cpp
+    src/Mara/Animator.cpp
     
     
 
  )
 
 # ----------------------------
+# Vendor path
+# ----------------------------
+set(VENDOR_DIR ${CMAKE_SOURCE_DIR}/vendor)
+
+# ----------------------------
 # Public headers
 # ----------------------------
 target_include_directories(core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Mara/include
+    ${VENDOR_DIR}/nlohmann
 )
 
 # ----------------------------
@@ -49,11 +58,6 @@ target_include_directories(core PUBLIC
 # ----------------------------
 find_package(OpenGL REQUIRED)
 target_link_libraries(core PUBLIC OpenGL::GL)
-
-# ----------------------------
-# Vendor path
-# ----------------------------
-set(VENDOR_DIR ${CMAKE_SOURCE_DIR}/vendor)
 
 # ----------------------------
 # GLFW

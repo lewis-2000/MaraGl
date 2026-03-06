@@ -9,13 +9,17 @@
 #include "Texture.h"
 #include "Shader.h"
 
-// Each vertex contains position, normal, texCoords
+// Each vertex contains position, normal, texCoords, bone data
 struct Vertex
 {
     glm::vec3 Position;
     glm::vec3 Normal;
     glm::vec2 TexCoords;
+    glm::ivec4 BoneIDs = glm::ivec4(-1);     // Up to 4 bones per vertex
+    glm::vec4 BoneWeights = glm::vec4(0.0f); // Weights for each bone
 };
+
+#define MAX_BONE_INFLUENCE 4
 
 class Mesh
 {

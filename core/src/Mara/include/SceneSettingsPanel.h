@@ -20,5 +20,6 @@ namespace MaraGl
     private:
         Scene *m_Scene;
         char skyboxPathBuffer[512] = "resources/skybox.hdr";
+        char scenePathBuffer[512] = "scenes/scene.json";
     };
 }

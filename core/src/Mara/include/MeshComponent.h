@@ -10,6 +10,7 @@ namespace MaraGl
     struct MeshComponent : public Component
     {
         std::shared_ptr<::Model> ModelPtr;
+        std::string ModelPath; // Path to the model file for serialization
         bool Visible = true;
         float ModelScale = 1.0f; // Per-model scale multiplier
 

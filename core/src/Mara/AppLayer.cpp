@@ -87,6 +87,7 @@ namespace MaraGl
             entity.AddComponent<TransformComponent>();
             auto &meshComp = entity.AddComponent<MeshComponent>();
             meshComp.ModelPtr = model;
+            meshComp.ModelPath = path.string();
 
             if (auto *hierarchyPanel = m_ImGuiLayer.GetHierarchyPanel())
                 hierarchyPanel->SetSelectedEntityID(entity.GetID());

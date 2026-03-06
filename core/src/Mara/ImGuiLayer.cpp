@@ -6,6 +6,7 @@
 #include <backends/imgui_impl_opengl3.h>
 #include <imgui_internal.h>
 #include <GLFW/glfw3.h>
+#include <iostream>
 
 namespace MaraGl
 {
@@ -58,6 +59,9 @@ namespace MaraGl
 
         // IMPORTANT: After adding fonts, must rebuild the font atlas for rendering
         io.Fonts->Build();
+
+        // Load icon fonts (if available)
+        LoadDefaultIconFonts();
 
         ApplyModernEditorStyle(); // Apply custom styling for a modern editor look
     }
@@ -304,5 +308,73 @@ namespace MaraGl
         }
         if (m_SceneSettingsPanel)
             m_SceneSettingsPanel->SetScene(scene);
+    }
+
+    ImFont *ImGuiLayer::LoadIconFont(const std::string &fontPath, float fontSize, const char *fontName)
+    {
+        ImGuiIO &io = ImGui::GetIO();
+
+        ImFont *font = io.Fonts->AddFontFromFileTTF(fontPath.c_str(), fontSize);
+        if (font)
+        {
+            m_IconFonts[fontName] = font;
+            io.Fonts->Build();
+            return font;
+        }
+
+        return nullptr;
+    }
+
+    ImFont *ImGuiLayer::GetIconFont(const char *fontName) const
+    {
+        auto it = m_IconFonts.find(fontName);
+        if (it != m_IconFonts.end())
+            return it->second;
+        return nullptr;
+    }
+
+    bool ImGuiLayer::HasIconFont(const char *fontName) const
+    {
+        return m_IconFonts.find(fontName) != m_IconFonts.end();
+    }
+
+    void ImGuiLayer::LoadDefaultIconFonts()
+    {
+        // Try to load common icon fonts if they exist
+        // FontAwesome 6 Free is the most common choice for ImGui
+        // Supports both TTF and OTF formats
+
+        // Attempt to load FontAwesome icon font if available
+        // We'll try both TTF and OTF variants in multiple locations
+        const char *faPathOptions[] = {
+            // TTF variants
+            // "resources/fonts/FontAwesome6-Solid.ttf",
+            // "resources/fonts/FontAwesome/FontAwesome6-Solid.ttf",
+            // "resources/fonts/icons/FontAwesome6-Solid.ttf",
+            // OTF variants
+            // "resources/fonts/FontAwesome6-Solid.otf",
+            "resources/fonts/FontAwesome/Font Awesome 6 Brands-Regular-400.otf",
+            "resources/fonts/icons/Font Awesome 6 Free-Regular-400.otf",
+            // Alternate naming (sometimes just "solid")
+            "resources/fonts/FontAwesome/Font Awesome 6 Free-Solid-900.otf"
+            // "resources/fonts/FontAwesome/solid.ttf"
+        };
+
+        for (const auto &path : faPathOptions)
+        {
+            ImFont *faFont = LoadIconFont(path, 14.0f, "FontAwesome");
+            if (faFont)
+            {
+                std::cout << "[ImGuiLayer] Successfully loaded FontAwesome icon font from: " << path << std::endl;
+                return;
+            }
+        }
+
+        std::cout << "[ImGuiLayer] No icon font found. To add icon support:" << std::endl;
+        std::cout << "  1. Download FontAwesome 6 Free from fontawesome.com/download" << std::endl;
+        std::cout << "  2. Extract the downloaded file" << std::endl;
+        std::cout << "  3. Copy 'FontAwesome6-Solid.otf' (or .ttf) to resources/fonts/" << std::endl;
+        std::cout << "  4. Restart the application" << std::endl;
+        std::cout << "  5. Use Icons::* constants from IconDefs.h with GetIconFont()" << std::endl;
     }
 }

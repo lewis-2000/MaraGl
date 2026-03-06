@@ -65,6 +65,7 @@ namespace MaraGl
         // Helper functions
         void RenderTimelineControls();
         void RenderEntityTracks();
+        void RenderSkeletalAnimations();
         void AddKeyframe(uint32_t entityID, const std::string &propertyName, float value);
         void UpdateEntityTransforms();
         float InterpolateKeyframes(const std::vector<Keyframe> &keyframes, float time);

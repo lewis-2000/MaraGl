@@ -20,6 +20,10 @@ void Mesh::setupMesh()
     vao.LinkAttrib(*vbo, 1, 3, GL_FLOAT, sizeof(Vertex), (void *)offsetof(Vertex, Normal));    // Normal
     vao.LinkAttrib(*vbo, 2, 2, GL_FLOAT, sizeof(Vertex), (void *)offsetof(Vertex, TexCoords)); // TexCoords
 
+    // Bone data
+    vao.LinkAttrib(*vbo, 3, 4, GL_INT, sizeof(Vertex), (void *)offsetof(Vertex, BoneIDs));       // Bone IDs
+    vao.LinkAttrib(*vbo, 4, 4, GL_FLOAT, sizeof(Vertex), (void *)offsetof(Vertex, BoneWeights)); // Bone Weights
+
     vao.Unbind();
     vbo->Unbind();
     ebo->Unbind();

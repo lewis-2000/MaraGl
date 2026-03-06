@@ -4,6 +4,9 @@
 #include "Entity.h"
 #include "TransformComponent.h"
 #include "NameComponent.h"
+#include "AnimationComponent.h"
+#include "MeshComponent.h"
+#include "Model.h"
 #include <algorithm>
 
 namespace MaraGl
@@ -27,6 +30,8 @@ namespace MaraGl
 
         RenderTimelineControls();
         ImGui::Separator();
+        RenderSkeletalAnimations();
+        ImGui::Separator();
         RenderEntityTracks();
 
         ImGui::End();
@@ -40,7 +45,7 @@ namespace MaraGl
             m_Timeline.currentTime = 0.0f;
 
         ImGui::SameLine();
-        if (ImGui::Button(m_Timeline.playing ? "⏸ Pause" : "▶ Play"))
+        if (ImGui::Button(m_Timeline.playing ? "⏸ Pause##timeline" : "▶ Play##timeline"))
             m_Timeline.playing = !m_Timeline.playing;
 
         ImGui::SameLine();
@@ -64,9 +69,173 @@ namespace MaraGl
                            "%.2f");
     }
 
+    void EditorTimelinePanel::RenderSkeletalAnimations()
+    {
+        ImGui::SeparatorText("Skeletal Animations");
+
+        if (m_SelectedEntityID == 0)
+        {
+            ImGui::Text("Select an entity to view animations");
+            return;
+        }
+
+        Entity *entity = m_Scene->FindEntityByID(m_SelectedEntityID);
+        if (!entity)
+        {
+            ImGui::Text("Selected entity not found");
+            return;
+        }
+
+        // Check if entity has AnimationComponent
+        auto *animComp = entity->GetComponent<AnimationComponent>();
+        if (!animComp)
+        {
+            ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "No AnimationComponent on this entity");
+
+            // Show hint if entity has a mesh that might have animations
+            auto *meshComp = entity->GetComponent<MeshComponent>();
+            if (meshComp && meshComp->ModelPtr && meshComp->ModelPtr->HasAnimations())
+            {
+                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f),
+                                   "✓ Model has %d animation(s)", meshComp->ModelPtr->GetAnimationCount());
+                ImGui::TextWrapped("Add AnimationComponent in Inspector and click 'Load Animations from Model'");
+            }
+            return;
+        }
+
+        // Animation component exists
+        if (animComp->animations.empty())
+        {
+            ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.0f, 1.0f), "No animations loaded");
+            ImGui::TextWrapped("Load animations from Inspector panel");
+            return;
+        }
+
+        // Animation info
+        ImGui::Text("Loaded Animations: %zu", animComp->animations.size());
+        ImGui::Text("Active Bones: %zu", animComp->boneInfoMap.size());
+
+        ImGui::Separator();
+
+        // Animation selector
+        Animation &currentAnim = animComp->animations[animComp->currentAnimation];
+        if (ImGui::BeginCombo("Select Animation", currentAnim.name.c_str()))
+        {
+            for (size_t i = 0; i < animComp->animations.size(); i++)
+            {
+                bool isSelected = (animComp->currentAnimation == static_cast<int>(i));
+                if (ImGui::Selectable(animComp->animations[i].name.c_str(), isSelected))
+                {
+                    animComp->currentAnimation = static_cast<int>(i);
+                    animComp->currentTime = 0.0f;
+                }
+                if (isSelected)
+                    ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
+
+        // Playback controls
+        ImGui::Spacing();
+
+        if (ImGui::Button(animComp->playing ? "⏸ Pause##skeletal" : "▶ Play##skeletal", ImVec2(80, 0)))
+            animComp->playing = !animComp->playing;
+
+        ImGui::SameLine();
+        if (ImGui::Button("⏹ Stop", ImVec2(80, 0)))
+        {
+            animComp->playing = false;
+            animComp->currentTime = 0.0f;
+        }
+
+        ImGui::SameLine();
+        ImGui::Checkbox("Loop", &animComp->looping);
+
+        // Time display
+        float duration = currentAnim.duration / currentAnim.ticksPerSecond;
+        float displayTime = (animComp->currentTime / currentAnim.ticksPerSecond);
+        ImGui::Text("Time: %.2fs / %.2fs", displayTime, duration);
+
+        // Time scrubber (in seconds for user-friendliness)
+        float scrubTime = displayTime;
+        if (ImGui::SliderFloat("##bone_anim_scrub", &scrubTime, 0.0f, duration, "%.2fs"))
+        {
+            animComp->currentTime = scrubTime * currentAnim.ticksPerSecond;
+            animComp->playing = false; // Pause when manually scrubbing
+        }
+
+        // Playback speed
+        ImGui::SliderFloat("Speed##skeletal", &animComp->playbackSpeed, 0.1f, 3.0f, "%.2fx");
+
+        // Sync with timeline option
+        ImGui::Spacing();
+        static bool syncWithTimeline = false;
+        if (ImGui::Checkbox("Sync with Timeline", &syncWithTimeline))
+        {
+            if (syncWithTimeline)
+            {
+                // Sync timeline to animation
+                m_Timeline.currentTime = displayTime;
+                m_Timeline.duration = duration;
+                m_Timeline.playing = animComp->playing;
+            }
+        }
+
+        if (syncWithTimeline)
+        {
+            // Keep them in sync
+            animComp->playing = m_Timeline.playing;
+            if (m_Timeline.playing)
+            {
+                float syncedTime = m_Timeline.currentTime * currentAnim.ticksPerSecond;
+                animComp->currentTime = syncedTime;
+            }
+            else
+            {
+                m_Timeline.currentTime = displayTime;
+            }
+        }
+
+        // Animation details (collapsible)
+        ImGui::Spacing();
+        if (ImGui::TreeNode("Animation Details"))
+        {
+            ImGui::Text("Duration: %.2fs (%.0f ticks)", duration, currentAnim.duration);
+            ImGui::Text("Ticks per Second: %.1f", currentAnim.ticksPerSecond);
+            ImGui::Text("Bone Channels: %zu", currentAnim.boneAnimations.size());
+
+            if (ImGui::TreeNode("Bone List##anim"))
+            {
+                for (const auto &[boneName, boneInfo] : animComp->boneInfoMap)
+                {
+                    ImGui::BulletText("%s (ID: %d)", boneName.c_str(), boneInfo.id);
+                }
+                ImGui::TreePop();
+            }
+
+            if (ImGui::TreeNode("Channel Info##anim"))
+            {
+                for (size_t i = 0; i < currentAnim.boneAnimations.size(); i++)
+                {
+                    const auto &boneAnim = currentAnim.boneAnimations[i];
+                    if (ImGui::TreeNode((void *)(intptr_t)i, "%s", boneAnim.boneName.c_str()))
+                    {
+                        ImGui::Text("Position Keys: %zu", boneAnim.positions.size());
+                        ImGui::Text("Rotation Keys: %zu", boneAnim.rotations.size());
+                        ImGui::Text("Scale Keys: %zu", boneAnim.scales.size());
+                        ImGui::TreePop();
+                    }
+                }
+                ImGui::TreePop();
+            }
+
+            ImGui::TreePop();
+        }
+    }
+
     void EditorTimelinePanel::RenderEntityTracks()
     {
-        ImGui::SeparatorText("Entity Animation Tracks");
+        ImGui::SeparatorText("Property Animation Tracks");
 
         if (m_SelectedEntityID == 0)
         {

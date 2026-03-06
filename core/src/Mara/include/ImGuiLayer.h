@@ -13,6 +13,10 @@
 // #include "AssetsPanel.h"
 #include "PanelManager.h"
 
+#include <imgui.h>
+#include <map>
+#include <string>
+
 namespace MaraGl
 {
     class Scene;
@@ -37,9 +41,15 @@ namespace MaraGl
 
         void ApplyModernEditorStyle();
 
+        // Icon font management
+        ImFont *LoadIconFont(const std::string &fontPath, float fontSize, const char *fontName = "Icons");
+        ImFont *GetIconFont(const char *fontName = "Icons") const;
+        bool HasIconFont(const char *fontName = "Icons") const;
+
     private:
         void init();
         void shutdown();
+        void LoadDefaultIconFonts();
 
     private:
         Window &m_Window;
@@ -53,5 +63,8 @@ namespace MaraGl
         SceneSettingsPanel *m_SceneSettingsPanel = nullptr;
         bool m_PanelsInitialized = false;
         Scene *m_Scene = nullptr;
+
+        // Icon font management
+        std::map<std::string, ImFont *> m_IconFonts;
     };
 }
