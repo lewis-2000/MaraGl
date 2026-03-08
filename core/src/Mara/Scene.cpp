@@ -13,15 +13,17 @@
 #include "AnimationComponent.h"
 #include "Animator.h"
 #include <algorithm>
+#include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 namespace MaraGl
 {
     Scene::Scene()
-        : m_GroundPlane(std::make_unique<::Plane>(20.0f, 20.0f)),
+        : m_GroundPlane(std::make_unique<::Plane>(100.0f, 100.0f)),
           m_LightGizmo(std::make_unique<::LightGizmo>(0.3f, 16)),
-          m_UnlitShader(std::make_unique<::Shader>("resources/shaders/unlit.vert", "resources/shaders/unlit.frag"))
+          m_UnlitShader(std::make_unique<::Shader>("resources/shaders/unlit.vert", "resources/shaders/unlit.frag")),
+          m_GridShader(std::make_unique<::Shader>("resources/shaders/grid.vert", "resources/shaders/grid.frag"))
     {
     }
 
@@ -107,6 +109,27 @@ namespace MaraGl
         }
     }
 
+    void Scene::RenderGrid(Renderer &renderer)
+    {
+        if (!m_GridShader || !m_GroundPlane)
+            return;
+
+        // Keep grid centered around the camera in XZ so it feels infinite.
+        m_GridShader->use();
+        glm::vec3 camPos = renderer.GetCamera().GetPosition();
+        glm::mat4 planeModel = glm::mat4(1.0f);
+        planeModel = glm::translate(planeModel, glm::vec3(camPos.x, 0.0f, camPos.z));
+        m_GridShader->setMat4("model", planeModel);
+        m_GridShader->setMat4("view", renderer.GetCamera().GetView());
+        m_GridShader->setMat4("projection", renderer.GetCamera().GetProjection());
+        m_GridShader->setVec3("uViewPos", camPos);
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        m_GroundPlane->Draw(*m_GridShader);
+        glDisable(GL_BLEND);
+    }
+
     void Scene::Render(Renderer &renderer, ::Shader &shader)
     {
         // Render skybox first if enabled
@@ -142,22 +165,6 @@ namespace MaraGl
 
         // Update all lights in shader before rendering
         UpdateLightsInShader(shader);
-
-        // Render ground plane
-        shader.use();
-        shader.setBool("uUseAnimation", false); // Ensure plane is not affected by bone animations
-        glm::mat4 planeModel = glm::mat4(1.0f);
-        planeModel = glm::translate(planeModel, glm::vec3(0.0f, -2.0f, 0.0f));
-        shader.setMat4("model", planeModel);
-        shader.setMat4("view", renderer.GetCamera().GetView());
-        shader.setMat4("projection", renderer.GetCamera().GetProjection());
-        shader.setVec3("uViewPos", renderer.GetCamera().GetPosition());
-        shader.setVec3("uObjectColor", glm::vec3(0.5f, 0.5f, 0.5f)); // Gray color for plane
-        shader.setBool("uUseTexture", false);
-        shader.setFloat("uAmbientStrength", renderer.GetSettings().ambientStrength);
-        shader.setFloat("uSpecularStrength", renderer.GetSettings().specularStrength);
-        shader.setFloat("uShininess", renderer.GetSettings().shininess);
-        m_GroundPlane->Draw(shader);
 
         // Render all entities with MeshComponent
         for (auto &entity : m_Entities)

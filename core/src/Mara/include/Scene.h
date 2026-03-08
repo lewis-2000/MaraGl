@@ -21,9 +21,9 @@ namespace MaraGl
     public:
         struct CameraSettings
         {
-            glm::vec3 Position = glm::vec3(0.0f, 0.0f, 3.0f);
-            float Yaw = -glm::half_pi<float>();
-            float Pitch = 0.0f;
+            glm::vec3 Position = glm::vec3(6.0f, 4.0f, 6.0f);
+            float Yaw = -2.35619449f; // -135 deg, looks back toward world origin
+            float Pitch = -0.45f;     // Slight downward angle
             float MoveSpeed = 5.0f;
             float MouseSensitivity = 0.01f;
             float FOV = 45.0f;
@@ -38,6 +38,7 @@ namespace MaraGl
         void DestroyEntity(uint32_t id);
 
         void Update(float deltaTime);
+        void RenderGrid(Renderer &renderer);
         void Render(Renderer &renderer, ::Shader &shader);
 
         Entity *FindEntityByID(uint32_t id);
@@ -79,6 +80,7 @@ namespace MaraGl
         bool m_SkyboxEnabled = false;
         std::unique_ptr<::LightGizmo> m_LightGizmo;
         std::unique_ptr<::Shader> m_UnlitShader;
+        std::unique_ptr<::Shader> m_GridShader;
         bool m_LightGizmoVisible = true;
 
         // Overcast light settings

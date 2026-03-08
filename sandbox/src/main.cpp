@@ -1,8 +1,8 @@
-#include "AppLayer.h"
+#include "SandboxApp.h"
 
 int main()
 {
-    MaraGl::AppLayer app(1366, 768, "Mara");
+    MaraGl::SandboxApp app(1366, 768, "MaraGl Sandbox");
     app.run();
     return 0;
 }

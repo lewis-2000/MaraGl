@@ -1,4 +1,4 @@
-#include "include/AppLayer.h"
+#include "AppLayer.h"
 #include "Scene.h"
 #include "NameComponent.h"
 #include "TransformComponent.h"
@@ -155,6 +155,9 @@ namespace MaraGl
         glViewport(0, 0, m_Framebuffer.getWidth(), m_Framebuffer.getHeight());
         glEnable(GL_DEPTH_TEST);
         m_Renderer.clear(0.1f, 0.2f, 0.3f, 1.0f);
+
+        // Draw grid as an independent pass so it appears immediately.
+        m_Scene.RenderGrid(m_Renderer);
 
         // Render all entities in the scene with the ECS
         m_Scene.Render(m_Renderer, shader);

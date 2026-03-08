@@ -32,5 +32,15 @@
       "color": [0.6, 0.7, 0.8],
       "intensity": 0.4
     }
+  },
+  "camera": {
+    "position": [6.0, 4.0, 6.0],
+    "yaw": -2.35619449,
+    "pitch": -0.45,
+    "moveSpeed": 5.0,
+    "mouseSensitivity": 0.01,
+    "fov": 45.0,
+    "nearClip": 0.1,
+    "farClip": 100.0
   }
 }
