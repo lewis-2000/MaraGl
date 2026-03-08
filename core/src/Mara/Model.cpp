@@ -9,8 +9,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-static Assimp::Importer staticImporter;
-
 Model::Model(const std::string &path)
 {
     loadModel(path);
@@ -26,7 +24,7 @@ void Model::Draw(Shader &shader)
 
 void Model::loadModel(const std::string &path)
 {
-    m_Scene = staticImporter.ReadFile(
+    m_Scene = m_Importer.ReadFile(
         path,
         aiProcess_Triangulate |
             aiProcess_GenNormals |
@@ -36,7 +34,7 @@ void Model::loadModel(const std::string &path)
 
     if (!m_Scene || m_Scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !m_Scene->mRootNode)
     {
-        std::cout << "ASSIMP ERROR: " << staticImporter.GetErrorString() << std::endl;
+        std::cout << "ASSIMP ERROR: " << m_Importer.GetErrorString() << std::endl;
         return;
     }
 

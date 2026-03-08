@@ -3,6 +3,8 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <memory>
+#include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 
 #include "Mesh.h"
@@ -26,6 +28,7 @@ private:
     std::vector<Mesh> meshes;
     std::string directory;
     std::vector<Texture> texturesLoaded;
+    Assimp::Importer m_Importer;
     const aiScene *m_Scene = nullptr;
     std::map<std::string, MaraGl::BoneInfo> m_BoneInfoMap;
     int m_BoneCount = 0;
