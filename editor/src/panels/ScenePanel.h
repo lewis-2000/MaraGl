@@ -21,8 +21,8 @@ namespace MaraGl
         {
             ImGui::Begin(GetName(), &m_Open);
 
-            // Check if this window is hovered (mouse is over it)
-            m_IsFocused = ImGui::IsWindowHovered();
+            // Scene input should be active whenever the viewport is hovered.
+            m_IsFocused = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows);
 
             ImVec2 size = ImGui::GetContentRegionAvail();
 

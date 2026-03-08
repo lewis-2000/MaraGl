@@ -64,6 +64,19 @@ void PerspectiveCamera::SetAspectRatio(float aspect)
     UpdateProjection();
 }
 
+void PerspectiveCamera::SetFOV(float fov)
+{
+    m_FOV = std::clamp(fov, 1.0f, 120.0f);
+    UpdateProjection();
+}
+
+void PerspectiveCamera::SetClipPlanes(float nearPlane, float farPlane)
+{
+    m_Near = std::max(nearPlane, 0.001f);
+    m_Far = std::max(farPlane, m_Near + 0.001f);
+    UpdateProjection();
+}
+
 void PerspectiveCamera::UpdateView()
 {
     m_View = glm::lookAt(m_Position, m_Position + m_Front, m_WorldUp);

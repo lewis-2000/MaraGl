@@ -16,6 +16,11 @@ uniform float uAmbientStrength;
 uniform float uSpecularStrength;
 uniform float uShininess;
 
+// Overcast light (global ambient illumination)
+uniform bool uOvercastEnabled;
+uniform vec3 uOvercastColor;
+uniform float uOvercastIntensity;
+
 // Directional Light
 struct DirLight
 {
@@ -132,6 +137,12 @@ void main()
     vec3 viewDir = normalize(uViewPos - vFragPos);
     
     vec3 result = vec3(0.0);
+    
+    // Overcast light (uniform ambient illumination)
+    if (uOvercastEnabled)
+    {
+        result += basColor * uOvercastColor * uOvercastIntensity;
+    }
     
     // Directional Light
     if (uDirLight.intensity > 0.0)

@@ -1,0 +1,83 @@
+{
+    "entities": [
+        {
+            "id": 4,
+            "light": {
+                "color": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "enabled": true,
+                "innerAngle": 15.0,
+                "intensity": 1.0,
+                "outerAngle": 25.0,
+                "range": 10.0,
+                "type": 2
+            },
+            "name": {
+                "value": "Light1"
+            },
+            "transform": {
+                "position": [
+                    0.0,
+                    5.099999904632568,
+                    0.0
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        },
+        {
+            "id": 5,
+            "mesh": {
+                "modelPath": "resources/models/Anim1/Thriller Part 3.fbx",
+                "scale": 0.009999999776482582,
+                "visible": true
+            },
+            "name": {
+                "value": "Person"
+            },
+            "transform": {
+                "position": [
+                    0.0,
+                    -1.7999999523162842,
+                    0.0
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        }
+    ],
+    "settings": {
+        "overcast": {
+            "color": [
+                0.6000000238418579,
+                0.699999988079071,
+                0.800000011920929
+            ],
+            "enabled": true,
+            "intensity": 0.4000000059604645
+        },
+        "skybox": {
+            "enabled": false
+        }
+    },
+    "version": "1.0"
+}

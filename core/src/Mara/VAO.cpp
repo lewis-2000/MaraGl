@@ -2,10 +2,11 @@
 
 VAO::VAO()
 {
-    glGenVertexArrays(1, &ID);
+    // Defer OpenGL object creation to first bind on the render thread.
+    ID = 0;
 }
 
-void VAO::LinkAttrib(VBO& vbo, GLuint layout, GLint numComponents, GLenum type, GLsizei stride, void* offset)
+void VAO::LinkAttrib(VBO &vbo, GLuint layout, GLint numComponents, GLenum type, GLsizei stride, void *offset)
 {
     vbo.Bind();
     glVertexAttribPointer(
@@ -14,14 +15,30 @@ void VAO::LinkAttrib(VBO& vbo, GLuint layout, GLint numComponents, GLenum type, 
         type,
         GL_FALSE,
         stride,
-        offset
-    );
+        offset);
+    glEnableVertexAttribArray(layout);
+    vbo.Unbind();
+}
+
+void VAO::LinkAttribI(VBO &vbo, GLuint layout, GLint numComponents, GLenum type, GLsizei stride, void *offset)
+{
+    vbo.Bind();
+    glVertexAttribIPointer(
+        layout,
+        numComponents,
+        type,
+        stride,
+        offset);
     glEnableVertexAttribArray(layout);
     vbo.Unbind();
 }
 
 void VAO::Bind()
 {
+    if (ID == 0)
+    {
+        glGenVertexArrays(1, &ID);
+    }
     glBindVertexArray(ID);
 }
 
@@ -32,5 +49,9 @@ void VAO::Unbind()
 
 void VAO::Delete()
 {
-    glDeleteVertexArrays(1, &ID);
+    if (ID != 0)
+    {
+        glDeleteVertexArrays(1, &ID);
+        ID = 0;
+    }
 }

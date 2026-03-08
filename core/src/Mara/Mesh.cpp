@@ -1,10 +1,92 @@
 #include "Mesh.h"
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 
-Mesh::Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vector<Texture> textures)
+namespace
+{
+    std::unordered_map<std::string, GLuint> g_TextureCache;
+    std::unordered_set<std::string> g_FailedTextureLoads;
+
+    bool UploadTextureIfNeeded(Texture &texture)
+    {
+        if (texture.ID != 0 || texture.path.empty())
+            return texture.ID != 0;
+
+        auto cached = g_TextureCache.find(texture.path);
+        if (cached != g_TextureCache.end())
+        {
+            texture.ID = cached->second;
+            return true;
+        }
+
+        if (g_FailedTextureLoads.find(texture.path) != g_FailedTextureLoads.end())
+            return false;
+
+        int width = 0;
+        int height = 0;
+        int channels = 0;
+        stbi_set_flip_vertically_on_load(true);
+        unsigned char *data = stbi_load(texture.path.c_str(), &width, &height, &channels, 0);
+        if (!data)
+        {
+            g_FailedTextureLoads.insert(texture.path);
+            return false;
+        }
+
+        GLenum format = GL_RGB;
+        if (channels == 1)
+            format = GL_RED;
+        else if (channels == 4)
+            format = GL_RGBA;
+
+        glGenTextures(1, &texture.ID);
+        glBindTexture(GL_TEXTURE_2D, texture.ID);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        stbi_image_free(data);
+
+        g_TextureCache[texture.path] = texture.ID;
+        return true;
+    }
+}
+
+void Mesh::ClearTextureCache()
+{
+    for (const auto &entry : g_TextureCache)
+    {
+        if (entry.second != 0)
+        {
+            glDeleteTextures(1, &entry.second);
+        }
+    }
+    g_TextureCache.clear();
+    g_FailedTextureLoads.clear();
+}
+
+Mesh::Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vector<Texture> textures, bool deferSetup)
     : vertices(vertices), indices(indices), textures(textures)
 {
-    setupMesh();
+    if (!deferSetup)
+    {
+        setupMesh();
+        m_GLObjectsInitialized = true;
+    }
+}
+
+void Mesh::InitializeGLObjects()
+{
+    if (!m_GLObjectsInitialized)
+    {
+        setupMesh();
+        m_GLObjectsInitialized = true;
+    }
 }
 
 void Mesh::setupMesh()
@@ -20,6 +102,10 @@ void Mesh::setupMesh()
     vao.LinkAttrib(*vbo, 1, 3, GL_FLOAT, sizeof(Vertex), (void *)offsetof(Vertex, Normal));    // Normal
     vao.LinkAttrib(*vbo, 2, 2, GL_FLOAT, sizeof(Vertex), (void *)offsetof(Vertex, TexCoords)); // TexCoords
 
+    // Bone data
+    vao.LinkAttribI(*vbo, 3, 4, GL_INT, sizeof(Vertex), (void *)offsetof(Vertex, BoneIDs));      // Bone IDs (integer)
+    vao.LinkAttrib(*vbo, 4, 4, GL_FLOAT, sizeof(Vertex), (void *)offsetof(Vertex, BoneWeights)); // Bone Weights
+
     vao.Unbind();
     vbo->Unbind();
     ebo->Unbind();
@@ -27,53 +113,53 @@ void Mesh::setupMesh()
 
 void Mesh::Draw(Shader &shader)
 {
+    // Lazily initialize GL objects if not done yet
+    if (!m_GLObjectsInitialized)
+    {
+        InitializeGLObjects();
+    }
     shader.use();
 
-    if (textures.empty())
+    // Create a 1x1 white fallback texture once and use it whenever no valid GPU textures exist.
+    static GLuint defaultWhiteTex = 0;
+    if (defaultWhiteTex == 0)
     {
-        // Create a 1x1 white texture on first use
-        static GLuint defaultWhiteTex = 0;
-        if (defaultWhiteTex == 0)
-        {
-            unsigned char whitePixel[3] = {255, 255, 255};
-            glGenTextures(1, &defaultWhiteTex);
-            glBindTexture(GL_TEXTURE_2D, defaultWhiteTex);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, whitePixel);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        }
-        glActiveTexture(GL_TEXTURE0);
+        unsigned char whitePixel[3] = {255, 255, 255};
+        glGenTextures(1, &defaultWhiteTex);
         glBindTexture(GL_TEXTURE_2D, defaultWhiteTex);
-        shader.setInt("texture_diffuse1", 0);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, whitePixel);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     }
-    else
+
+    bool hasBoundValidTexture = false;
+    if (!textures.empty())
     {
-        unsigned int diffuseNr = 1;
-        unsigned int specularNr = 1;
-        unsigned int normalNr = 1;
-        unsigned int heightNr = 1;
+        unsigned int boundTextureUnit = 0;
 
         for (unsigned int i = 0; i < textures.size(); i++)
         {
-            glActiveTexture(GL_TEXTURE0 + i); // Activate texture unit
+            if (!UploadTextureIfNeeded(textures[i]))
+                continue;
 
-            std::string number;
-            std::string name = textures[i].typeName;
-
-            if (name == "texture_diffuse")
-                number = std::to_string(diffuseNr++);
-            else if (name == "texture_specular")
-                number = std::to_string(specularNr++);
-            else if (name == "texture_normal")
-                number = std::to_string(normalNr++);
-            else if (name == "texture_height")
-                number = std::to_string(heightNr++);
-
-            shader.setInt((name + number).c_str(), i);
+            glActiveTexture(GL_TEXTURE0 + boundTextureUnit);
             glBindTexture(GL_TEXTURE_2D, textures[i].ID);
+
+            // Engine shader currently consumes one diffuse map.
+            shader.setInt("uDiffuseMap", boundTextureUnit);
+
+            hasBoundValidTexture = true;
+            break;
         }
+    }
+
+    if (!hasBoundValidTexture)
+    {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, defaultWhiteTex);
+        shader.setInt("uDiffuseMap", 0);
     }
 
     // Draw mesh

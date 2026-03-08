@@ -9,14 +9,12 @@ add_library(core STATIC)
 target_sources(core PRIVATE
     src/Engine.cpp
     src/Mara/Window.cpp  
-    src/Mara/AppLayer.cpp
     src/Mara/VBO.cpp
     src/Mara/VAO.cpp
     src/Mara/EBO.cpp
     src/Mara/Shader.cpp
     src/Mara/Texture.cpp
     src/Mara/Renderer.cpp
-    src/Mara/ImGuiLayer.cpp
     src/Mara/Framebuffer.cpp
     src/Mara/Input.cpp
     src/Mara/PerspectiveCamera.cpp
@@ -25,23 +23,25 @@ target_sources(core PRIVATE
     src/Mara/Timer.cpp
     src/Mara/Entity.cpp
     src/Mara/Scene.cpp
-    src/Mara/EditorTimelinePanel.cpp
-    src/Mara/HierarchyPanel.cpp
-    src/Mara/InspectorPanel.cpp
-    src/Mara/ModelLoaderPanel.cpp
     src/Mara/Plane.cpp
     src/Mara/Skybox.cpp
-    src/Mara/SceneSettingsPanel.cpp
-    
-    
-
+    src/Mara/LightGizmo.cpp
+    src/Mara/SceneSerializer.cpp
+    src/Mara/Animator.cpp
+    src/Mara/AssetLoader.cpp
  )
+
+# ----------------------------
+# Vendor path
+# ----------------------------
+set(VENDOR_DIR ${CMAKE_SOURCE_DIR}/vendor)
 
 # ----------------------------
 # Public headers
 # ----------------------------
 target_include_directories(core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Mara/include
+    ${VENDOR_DIR}/nlohmann
 )
 
 # ----------------------------
@@ -49,11 +49,6 @@ target_include_directories(core PUBLIC
 # ----------------------------
 find_package(OpenGL REQUIRED)
 target_link_libraries(core PUBLIC OpenGL::GL)
-
-# ----------------------------
-# Vendor path
-# ----------------------------
-set(VENDOR_DIR ${CMAKE_SOURCE_DIR}/vendor)
 
 # ----------------------------
 # GLFW

@@ -1,0 +1,46 @@
+{
+  "version": "1.0",
+  "entities": [
+    {
+      "id": 1,
+      "name": {
+        "value": "Main Light"
+      },
+      "transform": {
+        "position": [5.0, 10.0, 5.0],
+        "rotation": [0.0, 0.0, 0.0],
+        "scale": [1.0, 1.0, 1.0]
+      },
+      "light": {
+        "type": 1,
+        "color": [1.0, 1.0, 1.0],
+        "intensity": 2.0,
+        "range": 50.0,
+        "innerAngle": 15.0,
+        "outerAngle": 25.0,
+        "enabled": true
+      }
+    }
+  ],
+  "settings": {
+    "skybox": {
+      "enabled": false,
+      "path": ""
+    },
+    "overcast": {
+      "enabled": true,
+      "color": [0.6, 0.7, 0.8],
+      "intensity": 0.4
+    }
+  },
+  "camera": {
+    "position": [6.0, 4.0, 6.0],
+    "yaw": -2.35619449,
+    "pitch": -0.45,
+    "moveSpeed": 5.0,
+    "mouseSensitivity": 0.01,
+    "fov": 45.0,
+    "nearClip": 0.1,
+    "farClip": 100.0
+  }
+}

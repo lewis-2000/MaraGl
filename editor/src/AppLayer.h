@@ -14,6 +14,7 @@
 
 #include "Model.h"
 #include "ModelLoaderPanel.h"
+#include "AssetLoader.h"
 #include <memory>
 
 namespace MaraGl
@@ -39,6 +40,7 @@ namespace MaraGl
         Timer m_Timer;
         PerspectiveCamera m_Camera;
         Scene m_Scene;
+        AssetLoader m_AssetLoader;
         bool m_ModelLoaded = false;
         int m_FrameCount = 0;
     };
