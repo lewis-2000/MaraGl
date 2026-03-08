@@ -17,11 +17,13 @@ namespace MaraGl
     public:
         static bool SaveScene(Scene *scene, const std::string &filepath);
         static bool LoadScene(Scene *scene, const std::string &filepath);
+        static bool ParseSceneFile(const std::string &filepath, nlohmann::json &sceneJsonOut);
+        static bool ApplySceneData(Scene *scene, const nlohmann::json &sceneJson, bool loadModels = true);
 
     private:
         // Entity serialization
         static nlohmann::json SerializeEntity(Entity *entity);
-        static void DeserializeEntity(Scene *scene, const nlohmann::json &entityJson);
+        static void DeserializeEntity(Scene *scene, const nlohmann::json &entityJson, bool loadModels = true);
 
         // Component serializers
         static nlohmann::json SerializeTransform(TransformComponent *comp);
@@ -31,7 +33,7 @@ namespace MaraGl
 
         // Component deserializers
         static void DeserializeTransform(Entity *entity, const nlohmann::json &j);
-        static void DeserializeMesh(Entity *entity, const nlohmann::json &j);
+        static void DeserializeMesh(Entity *entity, const nlohmann::json &j, bool loadModel = true);
         static void DeserializeLight(Entity *entity, const nlohmann::json &j);
         static void DeserializeName(Entity *entity, const nlohmann::json &j);
 

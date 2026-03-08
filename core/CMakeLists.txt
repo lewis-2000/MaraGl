@@ -35,6 +35,8 @@ target_sources(core PRIVATE
     src/Mara/LightGizmo.cpp
     src/Mara/SceneSerializer.cpp
     src/Mara/Animator.cpp
+    src/Mara/AssetLoader.cpp
+    src/Mara/LoadingPanel.cpp
     
     
 

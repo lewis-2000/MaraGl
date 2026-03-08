@@ -17,6 +17,12 @@ public:
     void ProcessMouseMovement(float xoffset, float yoffset);
 
     void SetAspectRatio(float aspect);
+    void SetFOV(float fov);
+    void SetClipPlanes(float nearPlane, float farPlane);
+
+    float GetFOV() const { return m_FOV; }
+    float GetNearClip() const { return m_Near; }
+    float GetFarClip() const { return m_Far; }
 
     void MoveForward(float amount) { ProcessKeyboard(amount, false, false, false, false); }
     void MoveRight(float amount) { ProcessKeyboard(false, false, amount, false, false); }

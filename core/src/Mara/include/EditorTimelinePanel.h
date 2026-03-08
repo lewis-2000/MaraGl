@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <set>
 #include <cstdint>
 #include <glm/glm.hpp>
 
@@ -34,6 +35,27 @@ namespace MaraGl
         std::vector<PropertyTrack> tracks;
     };
 
+    // Bone sequencer track - represents one bone's animation channel
+    struct BoneSequencerTrack
+    {
+        std::string boneName;
+        bool visible = true;
+        bool selected = false;
+        int keyframeCount = 0;
+        float minTime = 0.0f;
+        float maxTime = 0.0f;
+    };
+
+    // Bone sequencer state for an entity's animation
+    struct BoneSequencerState
+    {
+        uint32_t entityID = 0;
+        int animationIndex = -1; // Start at -1 so first comparison triggers discovery
+        std::vector<BoneSequencerTrack> tracks;
+        std::set<std::string> discoveredBones;
+        bool needsRefresh = true;
+    };
+
     struct TimelineState
     {
         float currentTime = 0.0f;
@@ -60,12 +82,19 @@ namespace MaraGl
         Scene *m_Scene;
         HierarchyPanel *m_HierarchyPanel;
         std::map<uint32_t, EntityAnimationData> m_EntityAnimations; // entity ID -> animation data
+        std::map<uint32_t, BoneSequencerState> m_BoneSequencers;    // entity ID -> bone sequencer state
         uint32_t m_SelectedEntityID = 0;
+        float m_TimelinePixelsPerSecond = 100.0f;
 
         // Helper functions
         void RenderTimelineControls();
         void RenderEntityTracks();
         void RenderSkeletalAnimations();
+        void RenderBoneSequencer();
+        void DiscoverBonesInAnimation(uint32_t entityID, int animationIndex);
+        void RefreshBoneSequencerTracks(BoneSequencerState &sequencer, class AnimationComponent *animComp);
+        void RenderSequencerTimeline(const char *label, float width, float height);
+        void RenderBoneTrack(BoneSequencerTrack &track, const class Animation &animation, float timelineStartX, float timelineWidth);
         void AddKeyframe(uint32_t entityID, const std::string &propertyName, float value);
         void UpdateEntityTransforms();
         float InterpolateKeyframes(const std::vector<Keyframe> &keyframes, float time);

@@ -34,10 +34,14 @@ public:
     VBO *vbo;
     EBO *ebo;
 
-    Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vector<Texture> textures);
+    Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vector<Texture> textures, bool deferSetup = false);
 
     void Draw(Shader &shader);
+    void InitializeGLObjects(); // Call this on main thread after creation
+    static void ClearTextureCache();
+    bool IsInitialized() const { return m_GLObjectsInitialized; }
 
 private:
     void setupMesh();
+    bool m_GLObjectsInitialized = false;
 };

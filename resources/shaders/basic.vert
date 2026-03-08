@@ -15,6 +15,7 @@ uniform mat4 view;
 uniform mat4 projection;
 
 // Animation uniforms
+// Keep this conservative for GL 3.3 uniform limits.
 const int MAX_BONES = 100;
 uniform bool uUseAnimation;
 uniform mat4 uBoneTransforms[MAX_BONES];
@@ -32,7 +33,7 @@ void main()
         
         for (int i = 0; i < 4; i++)
         {
-            if (aBoneIDs[i] >= 0)
+            if (aBoneIDs[i] >= 0 && aBoneIDs[i] < MAX_BONES)
             {
                 boneTransform += uBoneTransforms[aBoneIDs[i]] * aBoneWeights[i];
                 totalWeight += aBoneWeights[i];

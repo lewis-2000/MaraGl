@@ -86,25 +86,8 @@ namespace MaraGl
                             }
 
                             glm::mat4 identity(1.0f);
-                            Animator::CalculateBoneTransform(animComp, animation, scene->mRootNode, identity);
-
-                            // Debug: Check for identity matrices (bones not updated)
-                            static int debugCounter = 0;
-                            if (++debugCounter % 600 == 0)
-                            {
-                                int identityCount = 0;
-                                for (const auto &transform : animComp->boneTransforms)
-                                {
-                                    if (transform == glm::mat4(1.0f))
-                                        identityCount++;
-                                }
-                                if (identityCount > 0)
-                                {
-                                    std::cout << "[Scene] WARNING: " << identityCount << "/"
-                                              << animComp->boneTransforms.size()
-                                              << " bones have identity transforms (not updated)" << std::endl;
-                                }
-                            }
+                            glm::mat4 globalInverseTransform = Animator::GetGlobalInverseTransform(scene);
+                            Animator::CalculateBoneTransform(animComp, animation, scene->mRootNode, identity, globalInverseTransform);
                         }
                     }
                 }
@@ -197,9 +180,20 @@ namespace MaraGl
             auto *animComp = entity->GetComponent<AnimationComponent>();
             if (animComp && animComp->playing && !animComp->boneTransforms.empty())
             {
+                constexpr size_t kShaderMaxBones = 100;
                 shader.use();
                 shader.setBool("uUseAnimation", true);
-                shader.setMat4Array("uBoneTransforms", animComp->boneTransforms);
+
+                if (animComp->boneTransforms.size() > kShaderMaxBones)
+                {
+                    std::vector<glm::mat4> clipped(animComp->boneTransforms.begin(),
+                                                   animComp->boneTransforms.begin() + kShaderMaxBones);
+                    shader.setMat4Array("uBoneTransforms", clipped);
+                }
+                else
+                {
+                    shader.setMat4Array("uBoneTransforms", animComp->boneTransforms);
+                }
             }
             else
             {
@@ -212,7 +206,7 @@ namespace MaraGl
         }
 
         // Render light gizmos (editor visualization)
-        if (m_LightGizmo && m_UnlitShader)
+        if (m_LightGizmoVisible && m_LightGizmo && m_UnlitShader)
         {
             m_UnlitShader->use();
             m_UnlitShader->setMat4("view", renderer.GetCamera().GetView());

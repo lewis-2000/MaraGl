@@ -62,8 +62,18 @@ void Shader::setMat4(const std::string &name, const glm::mat4 &mat) const
 
 void Shader::setMat4Array(const std::string &name, const std::vector<glm::mat4> &matrices) const
 {
-    // Get the location of the uniform array in the shader
-    unsigned int location = glGetUniformLocation(shaderProgram, name.c_str());
+    if (matrices.empty())
+        return;
+
+    // Resolve array base location; some drivers expect "name[0]" for uniform arrays.
+    GLint location = glGetUniformLocation(shaderProgram, name.c_str());
+    if (location == -1)
+    {
+        std::string indexedName = name + "[0]";
+        location = glGetUniformLocation(shaderProgram, indexedName.c_str());
+    }
+    if (location == -1)
+        return;
 
     // Send the matrix array to the shader
     glUniformMatrix4fv(location, matrices.size(), GL_FALSE, glm::value_ptr(matrices[0]));

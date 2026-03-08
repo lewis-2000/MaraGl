@@ -10,6 +10,8 @@
 #include "Model.h"
 #include <memory>
 #include <filesystem>
+#include <algorithm>
+#include <vector>
 
 namespace MaraGl
 {
@@ -108,26 +110,149 @@ namespace MaraGl
                 {
                     ImGui::Spacing();
 
-                    // Model path input
-                    static char modelPathBuffer[512] = "resources/models/";
-                    ImGui::InputText("Model Path##mesh", modelPathBuffer, sizeof(modelPathBuffer));
+                    // File picker state (shared UI state for inspector model selection)
+                    static bool showModelBrowser = false;
+                    static std::string currentDirectory = std::filesystem::current_path().string();
+                    static std::vector<std::pair<std::string, bool>> directoryContents;
+                    static std::string selectedPath;
 
-                    if (ImGui::Button("Load Model##mesh"))
+                    if (ImGui::Button("Browse Model##mesh"))
                     {
-                        std::string modelPath(modelPathBuffer);
-                        if (std::filesystem::exists(modelPath))
+                        showModelBrowser = true;
+                        try
                         {
-                            try
+                            directoryContents.clear();
+                            for (const auto &entry : std::filesystem::directory_iterator(currentDirectory))
                             {
-                                meshComp->ModelPtr = std::make_shared<Model>(modelPath);
-                                meshComp->ModelPath = modelPath;
-                                ImGui::OpenPopup("ModelLoadSuccess");
+                                directoryContents.push_back({entry.path().filename().string(), entry.is_directory()});
                             }
-                            catch (const std::exception &e)
+                            std::sort(directoryContents.begin(), directoryContents.end(),
+                                      [](const auto &a, const auto &b)
+                                      {
+                                          if (a.second != b.second)
+                                              return a.second > b.second;
+                                          return a.first < b.first;
+                                      });
+                        }
+                        catch (const std::exception &)
+                        {
+                        }
+                    }
+
+                    if (!meshComp->ModelPath.empty())
+                    {
+                        ImGui::TextWrapped("Model: %s", meshComp->ModelPath.c_str());
+                    }
+
+                    if (showModelBrowser)
+                    {
+                        ImGui::OpenPopup("##InspectorModelBrowser");
+                    }
+
+                    if (ImGui::BeginPopupModal("##InspectorModelBrowser", &showModelBrowser, ImGuiWindowFlags_AlwaysAutoResize))
+                    {
+                        ImGui::Text("Current: %s", currentDirectory.c_str());
+                        ImGui::Separator();
+
+                        if (ImGui::Button(".. (Parent)##inspector_parent"))
+                        {
+                            auto parent = std::filesystem::path(currentDirectory).parent_path();
+                            if (!parent.empty() && parent.string() != currentDirectory)
                             {
-                                // Could display error in a popup
+                                currentDirectory = parent.string();
+                                try
+                                {
+                                    directoryContents.clear();
+                                    for (const auto &entry : std::filesystem::directory_iterator(currentDirectory))
+                                    {
+                                        directoryContents.push_back({entry.path().filename().string(), entry.is_directory()});
+                                    }
+                                    std::sort(directoryContents.begin(), directoryContents.end(),
+                                              [](const auto &a, const auto &b)
+                                              {
+                                                  if (a.second != b.second)
+                                                      return a.second > b.second;
+                                                  return a.first < b.first;
+                                              });
+                                }
+                                catch (const std::exception &)
+                                {
+                                }
                             }
                         }
+
+                        ImGui::Separator();
+                        if (ImGui::BeginListBox("##inspector_filelist", ImVec2(520, 320)))
+                        {
+                            for (const auto &[name, isDir] : directoryContents)
+                            {
+                                std::string label = isDir ? "[DIR] " + name : name;
+                                bool isSelected = (!isDir && selectedPath == (std::filesystem::path(currentDirectory) / name).string());
+                                if (ImGui::Selectable(label.c_str(), isSelected))
+                                {
+                                    if (isDir)
+                                    {
+                                        currentDirectory = (std::filesystem::path(currentDirectory) / name).string();
+                                        try
+                                        {
+                                            directoryContents.clear();
+                                            for (const auto &entry : std::filesystem::directory_iterator(currentDirectory))
+                                            {
+                                                directoryContents.push_back({entry.path().filename().string(), entry.is_directory()});
+                                            }
+                                            std::sort(directoryContents.begin(), directoryContents.end(),
+                                                      [](const auto &a, const auto &b)
+                                                      {
+                                                          if (a.second != b.second)
+                                                              return a.second > b.second;
+                                                          return a.first < b.first;
+                                                      });
+                                        }
+                                        catch (const std::exception &)
+                                        {
+                                        }
+                                    }
+                                    else
+                                    {
+                                        selectedPath = (std::filesystem::path(currentDirectory) / name).string();
+                                    }
+                                }
+                            }
+                            ImGui::EndListBox();
+                        }
+
+                        ImGui::Separator();
+                        if (!selectedPath.empty())
+                        {
+                            ImGui::TextWrapped("Selected: %s", selectedPath.c_str());
+                        }
+
+                        if (ImGui::Button("Load Selected##inspector_load", ImVec2(160, 0)))
+                        {
+                            if (!selectedPath.empty() && std::filesystem::exists(selectedPath))
+                            {
+                                try
+                                {
+                                    meshComp->ModelPtr = std::make_shared<Model>(selectedPath);
+                                    meshComp->ModelPath = selectedPath;
+                                    ImGui::OpenPopup("ModelLoadSuccess");
+                                    showModelBrowser = false;
+                                    ImGui::CloseCurrentPopup();
+                                }
+                                catch (const std::exception &)
+                                {
+                                }
+                            }
+                        }
+
+                        ImGui::SameLine();
+                        if (ImGui::Button("Cancel##inspector_cancel", ImVec2(120, 0)))
+                        {
+                            showModelBrowser = false;
+                            ImGui::CloseCurrentPopup();
+                        }
+
+                        ImGui::EndPopup();
                     }
 
                     ImGui::SameLine();
@@ -178,8 +303,9 @@ namespace MaraGl
                                 if (scene && scene->mRootNode)
                                 {
                                     glm::mat4 identity(1.0f);
+                                    glm::mat4 globalInverseTransform = Animator::GetGlobalInverseTransform(scene);
                                     Animator::CalculateBoneTransform(animComp, animComp->animations[0],
-                                                                     scene->mRootNode, identity);
+                                                                     scene->mRootNode, identity, globalInverseTransform);
                                 }
                             }
 

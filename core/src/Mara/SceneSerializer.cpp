@@ -74,6 +74,19 @@ namespace MaraGl
         if (!scene)
             return false;
 
+        json sceneJson;
+        if (!ParseSceneFile(filepath, sceneJson))
+            return false;
+
+        bool success = ApplySceneData(scene, sceneJson, true);
+        if (success)
+            std::cout << "Scene loaded successfully from: " << filepath << std::endl;
+
+        return success;
+    }
+
+    bool SceneSerializer::ParseSceneFile(const std::string &filepath, nlohmann::json &sceneJsonOut)
+    {
         try
         {
             std::ifstream file(filepath);
@@ -83,10 +96,24 @@ namespace MaraGl
                 return false;
             }
 
-            json sceneJson;
-            file >> sceneJson;
+            file >> sceneJsonOut;
             file.close();
+            return true;
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << "Error parsing scene file: " << e.what() << std::endl;
+            return false;
+        }
+    }
 
+    bool SceneSerializer::ApplySceneData(Scene *scene, const nlohmann::json &sceneJson, bool loadModels)
+    {
+        if (!scene)
+            return false;
+
+        try
+        {
             // Check version
             if (sceneJson.contains("version"))
             {
@@ -99,7 +126,7 @@ namespace MaraGl
             {
                 for (const auto &entityJson : sceneJson["entities"])
                 {
-                    DeserializeEntity(scene, entityJson);
+                    DeserializeEntity(scene, entityJson, loadModels);
                 }
             }
 
@@ -109,12 +136,11 @@ namespace MaraGl
                 DeserializeSceneSettings(scene, sceneJson["settings"]);
             }
 
-            std::cout << "Scene loaded successfully from: " << filepath << std::endl;
             return true;
         }
         catch (const std::exception &e)
         {
-            std::cerr << "Error loading scene: " << e.what() << std::endl;
+            std::cerr << "Error applying scene data: " << e.what() << std::endl;
             return false;
         }
     }
@@ -151,7 +177,7 @@ namespace MaraGl
         return j;
     }
 
-    void SceneSerializer::DeserializeEntity(Scene *scene, const json &entityJson)
+    void SceneSerializer::DeserializeEntity(Scene *scene, const json &entityJson, bool loadModels)
     {
         // Create entity with default name first
         std::string entityName = "Entity";
@@ -175,7 +201,7 @@ namespace MaraGl
 
         if (entityJson.contains("mesh"))
         {
-            DeserializeMesh(&entity, entityJson["mesh"]);
+            DeserializeMesh(&entity, entityJson["mesh"], loadModels);
         }
 
         if (entityJson.contains("light"))
@@ -239,7 +265,7 @@ namespace MaraGl
         }
     }
 
-    void SceneSerializer::DeserializeMesh(Entity *entity, const json &j)
+    void SceneSerializer::DeserializeMesh(Entity *entity, const json &j, bool loadModel)
     {
         auto &mesh = entity->AddComponent<MeshComponent>();
 
@@ -256,15 +282,18 @@ namespace MaraGl
             std::string modelPath = j["modelPath"];
             mesh.ModelPath = modelPath;
 
-            // Try to load the model
-            try
+            if (loadModel)
             {
-                mesh.ModelPtr = std::make_shared<Model>(modelPath);
-                std::cout << "Loaded model: " << modelPath << std::endl;
-            }
-            catch (const std::exception &e)
-            {
-                std::cerr << "Failed to load model '" << modelPath << "': " << e.what() << std::endl;
+                // Try to load the model
+                try
+                {
+                    mesh.ModelPtr = std::make_shared<Model>(modelPath);
+                    std::cout << "Loaded model: " << modelPath << std::endl;
+                }
+                catch (const std::exception &e)
+                {
+                    std::cerr << "Failed to load model '" << modelPath << "': " << e.what() << std::endl;
+                }
             }
         }
     }
@@ -327,6 +356,17 @@ namespace MaraGl
         j["overcast"]["color"] = {overcastColor.x, overcastColor.y, overcastColor.z};
         j["overcast"]["intensity"] = scene->GetOvercastIntensity();
 
+        // Editor camera settings
+        const auto &camera = scene->GetCameraSettings();
+        j["camera"]["position"] = {camera.Position.x, camera.Position.y, camera.Position.z};
+        j["camera"]["yaw"] = camera.Yaw;
+        j["camera"]["pitch"] = camera.Pitch;
+        j["camera"]["moveSpeed"] = camera.MoveSpeed;
+        j["camera"]["mouseSensitivity"] = camera.MouseSensitivity;
+        j["camera"]["fov"] = camera.FOV;
+        j["camera"]["nearClip"] = camera.NearClip;
+        j["camera"]["farClip"] = camera.FarClip;
+
         return j;
     }
 
@@ -367,6 +407,35 @@ namespace MaraGl
             {
                 scene->SetOvercastIntensity(j["overcast"]["intensity"]);
             }
+        }
+
+        if (j.contains("camera"))
+        {
+            auto camera = scene->GetCameraSettings();
+
+            if (j["camera"].contains("position"))
+            {
+                camera.Position = glm::vec3(
+                    j["camera"]["position"][0],
+                    j["camera"]["position"][1],
+                    j["camera"]["position"][2]);
+            }
+            if (j["camera"].contains("yaw"))
+                camera.Yaw = j["camera"]["yaw"];
+            if (j["camera"].contains("pitch"))
+                camera.Pitch = j["camera"]["pitch"];
+            if (j["camera"].contains("moveSpeed"))
+                camera.MoveSpeed = j["camera"]["moveSpeed"];
+            if (j["camera"].contains("mouseSensitivity"))
+                camera.MouseSensitivity = j["camera"]["mouseSensitivity"];
+            if (j["camera"].contains("fov"))
+                camera.FOV = j["camera"]["fov"];
+            if (j["camera"].contains("nearClip"))
+                camera.NearClip = j["camera"]["nearClip"];
+            if (j["camera"].contains("farClip"))
+                camera.FarClip = j["camera"]["farClip"];
+
+            scene->SetCameraSettings(camera);
         }
     }
 }

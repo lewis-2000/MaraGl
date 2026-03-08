@@ -5,6 +5,7 @@
 namespace MaraGl
 {
     class Scene;
+    class AssetLoader;
 
     class SceneSettingsPanel : public EditorPanel
     {
@@ -16,9 +17,11 @@ namespace MaraGl
         void OnImGuiRender() override;
 
         void SetScene(Scene *scene) { m_Scene = scene; }
+        void SetAssetLoader(AssetLoader *loader) { m_AssetLoader = loader; }
 
     private:
         Scene *m_Scene;
+        AssetLoader *m_AssetLoader = nullptr;
         char skyboxPathBuffer[512] = "resources/skybox.hdr";
         char scenePathBuffer[512] = "scenes/scene.json";
     };

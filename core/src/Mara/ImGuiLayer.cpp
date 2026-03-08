@@ -192,28 +192,16 @@ namespace MaraGl
             m_ModelLoaderPanel = m_PanelManager.AddPanel<ModelLoaderPanel>();
             m_TimelinePanel = m_PanelManager.AddPanel<EditorTimelinePanel>();
             m_SceneSettingsPanel = m_PanelManager.AddPanel<SceneSettingsPanel>();
+            m_LoadingPanel = m_PanelManager.AddPanel<LoadingPanel>();
             // m_PanelManager.AddPanel<ConsolePanel>();
             // m_PanelManager.AddPanel<AssetsPanel>();
             m_PanelsInitialized = true;
 
-            // Apply scene pointer to newly created panels
+            // Re-apply externally provided pointers now that panels exist.
             if (m_Scene)
-            {
-                if (m_InspectorPanel)
-                {
-                    m_InspectorPanel->SetScene(m_Scene);
-                    m_InspectorPanel->SetHierarchyPanel(m_HierarchyPanel);
-                }
-                if (m_HierarchyPanel)
-                    m_HierarchyPanel->SetScene(m_Scene);
-                if (m_TimelinePanel)
-                {
-                    m_TimelinePanel->SetScene(m_Scene);
-                    m_TimelinePanel->SetHierarchyPanel(m_HierarchyPanel);
-                }
-                if (m_SceneSettingsPanel)
-                    m_SceneSettingsPanel->SetScene(m_Scene);
-            }
+                SetScene(m_Scene);
+            if (m_AssetLoader)
+                SetAssetLoader(m_AssetLoader);
         }
         else if (framebuffer != m_Framebuffer && m_ScenePanel)
         {
@@ -254,27 +242,31 @@ namespace MaraGl
                 ImGui::DockBuilderAddNode(dockspaceID, ImGuiDockNodeFlags_DockSpace);
                 ImGui::DockBuilderSetNodeSize(dockspaceID, viewport->WorkSize);
 
-                // --- Split main dockspace into left (Inspector+Hierarchy) and right (Scene+Tabs) ---
-                ImGuiID dock_left = ImGui::DockBuilderSplitNode(dockspaceID, ImGuiDir_Left, 0.40f, nullptr, &dockspaceID);
-                ImGuiID dock_right = dockspaceID;
+                // --- Split left for hierarchy ---
+                ImGuiID dock_left = ImGui::DockBuilderSplitNode(
+                    dockspaceID, ImGuiDir_Left, 0.20f, nullptr, &dockspaceID);
 
-                // --- Split left column vertically: Inspector / Hierarchy ---
-                ImGuiID dock_inspector = ImGui::DockBuilderSplitNode(dock_left, ImGuiDir_Up, 0.55f, nullptr, &dock_left);
-                ImGuiID dock_hierarchy = dock_left;
+                // --- Split right for inspector ---
+                ImGuiID dock_right = ImGui::DockBuilderSplitNode(
+                    dockspaceID, ImGuiDir_Right, 0.25f, nullptr, &dockspaceID);
 
-                // --- Split right column vertically: Scene / Bottom Tabs ---
-                ImGuiID dock_scene = ImGui::DockBuilderSplitNode(dock_right, ImGuiDir_Up, 0.75f, nullptr, &dock_right);
-                ImGuiID dock_bottom_tabs = dock_right;
+                // --- Split bottom for timeline / console / assets ---
+                ImGuiID dock_bottom = ImGui::DockBuilderSplitNode(
+                    dockspaceID, ImGuiDir_Down, 0.25f, nullptr, &dockspaceID);
 
-                // --- Dock windows to nodes ---
-                ImGui::DockBuilderDockWindow("Inspector", dock_inspector);
-                ImGui::DockBuilderDockWindow("Hierarchy", dock_hierarchy);
+                // Remaining center becomes the scene
+                ImGuiID dock_scene = dockspaceID;
+
+                // --- Dock windows ---
+                ImGui::DockBuilderDockWindow("Hierarchy", dock_left);
                 ImGui::DockBuilderDockWindow("Scene", dock_scene);
-                ImGui::DockBuilderDockWindow("Scene Settings", dock_bottom_tabs);
-                ImGui::DockBuilderDockWindow("Model Loader", dock_bottom_tabs);
-                ImGui::DockBuilderDockWindow("Console", dock_bottom_tabs);
-                ImGui::DockBuilderDockWindow("Assets", dock_bottom_tabs);
-                ImGui::DockBuilderDockWindow("Timeline", dock_bottom_tabs);
+                ImGui::DockBuilderDockWindow("Inspector", dock_right);
+
+                ImGui::DockBuilderDockWindow("Timeline", dock_bottom);
+                ImGui::DockBuilderDockWindow("Console", dock_bottom);
+                ImGui::DockBuilderDockWindow("Assets", dock_bottom);
+                ImGui::DockBuilderDockWindow("Model Loader", dock_bottom);
+                ImGui::DockBuilderDockWindow("Scene Settings", dock_bottom);
 
                 ImGui::DockBuilderFinish(dockspaceID);
             }
@@ -310,6 +302,20 @@ namespace MaraGl
             m_SceneSettingsPanel->SetScene(scene);
     }
 
+    void ImGuiLayer::SetAssetLoader(AssetLoader *loader)
+    {
+        m_AssetLoader = loader;
+
+        // Only apply to panels if they've been initialized
+        if (!m_PanelsInitialized)
+            return;
+
+        if (m_LoadingPanel)
+            m_LoadingPanel->SetAssetLoader(loader);
+        if (m_SceneSettingsPanel)
+            m_SceneSettingsPanel->SetAssetLoader(loader);
+    }
+
     ImFont *ImGuiLayer::LoadIconFont(const std::string &fontPath, float fontSize, const char *fontName)
     {
         ImGuiIO &io = ImGui::GetIO();
@@ -340,8 +346,7 @@ namespace MaraGl
 
     void ImGuiLayer::LoadDefaultIconFonts()
     {
-        // Try to load common icon fonts if they exist
-        // FontAwesome 6 Free is the most common choice for ImGui
+
         // Supports both TTF and OTF formats
 
         // Attempt to load FontAwesome icon font if available

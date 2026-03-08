@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
 #include "Entity.h"
 #include "ComponentRegistry.h"
 
@@ -18,6 +19,18 @@ namespace MaraGl
     class Scene
     {
     public:
+        struct CameraSettings
+        {
+            glm::vec3 Position = glm::vec3(0.0f, 0.0f, 3.0f);
+            float Yaw = -glm::half_pi<float>();
+            float Pitch = 0.0f;
+            float MoveSpeed = 5.0f;
+            float MouseSensitivity = 0.01f;
+            float FOV = 45.0f;
+            float NearClip = 0.1f;
+            float FarClip = 100.0f;
+        };
+
         Scene();
         ~Scene();
 
@@ -38,6 +51,9 @@ namespace MaraGl
         void SetSkyboxEnabled(bool enabled) { m_SkyboxEnabled = enabled; }
         bool IsSkyboxEnabled() const { return m_SkyboxEnabled; }
 
+        void SetLightGizmoVisible(bool visible) { m_LightGizmoVisible = visible; }
+        bool IsLightGizmoVisible() const { return m_LightGizmoVisible; }
+
         // Overcast light (global ambient illumination)
         void SetOvercastEnabled(bool enabled) { m_OvercastEnabled = enabled; }
         bool IsOvercastEnabled() const { return m_OvercastEnabled; }
@@ -51,6 +67,9 @@ namespace MaraGl
         bool LoadFromFile(const std::string &filepath);
         void ClearScene();
 
+        const CameraSettings &GetCameraSettings() const { return m_CameraSettings; }
+        void SetCameraSettings(const CameraSettings &settings) { m_CameraSettings = settings; }
+
     private:
         std::vector<std::unique_ptr<Entity>> m_Entities;
         ComponentRegistry m_Registry;
@@ -60,10 +79,14 @@ namespace MaraGl
         bool m_SkyboxEnabled = false;
         std::unique_ptr<::LightGizmo> m_LightGizmo;
         std::unique_ptr<::Shader> m_UnlitShader;
+        bool m_LightGizmoVisible = true;
 
         // Overcast light settings
         bool m_OvercastEnabled = true;
         glm::vec3 m_OvercastColor = glm::vec3(0.6f, 0.7f, 0.8f); // Cool sky color
         float m_OvercastIntensity = 0.4f;
+
+        // Persisted editor camera values for scene save/load.
+        CameraSettings m_CameraSettings;
     };
 }

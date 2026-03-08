@@ -19,7 +19,9 @@ Model::Model(const std::string &path)
 void Model::Draw(Shader &shader)
 {
     for (auto &mesh : meshes)
+    {
         mesh.Draw(shader);
+    }
 }
 
 void Model::loadModel(const std::string &path)
@@ -151,7 +153,8 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
         }
     }
 
-    return Mesh(vertices, indices, textures);
+    // Defer OpenGL object creation to main thread
+    return Mesh(vertices, indices, textures, true); // deferSetup = true
 }
 
 std::vector<Texture> Model::loadMaterialTextures(
@@ -160,6 +163,10 @@ std::vector<Texture> Model::loadMaterialTextures(
     const std::string &typeName)
 {
     std::vector<Texture> textures;
+
+    // Note: When models are loaded from worker threads (async loading),
+    // texture creation is skipped because OpenGL operations must happen on the main thread.
+    // Textures can be loaded later or the model will render with default white color.
 
     for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
     {
@@ -192,56 +199,14 @@ std::vector<Texture> Model::loadMaterialTextures(
                 continue;
             }
 
-            Texture texture(
-                fullPath.c_str(),
-                GL_TEXTURE_2D,
-                GL_TEXTURE0,
-                GL_RGB,
-                GL_UNSIGNED_BYTE,
-                typeName);
-            glGenTextures(1, &texture.ID);
-
-            int width, height, nrChannels;
-            unsigned char *data = stbi_load(fullPath.c_str(),
-                                            &width, &height,
-                                            &nrChannels, 0);
-
-            if (data)
-            {
-                std::cout << "Successfully loaded texture: " << fullPath << std::endl;
-
-                GLenum format = GL_RGB;
-                if (nrChannels == 1)
-                    format = GL_RED;
-                else if (nrChannels == 3)
-                    format = GL_RGB;
-                else if (nrChannels == 4)
-                    format = GL_RGBA;
-
-                glBindTexture(GL_TEXTURE_2D, texture.ID);
-                glTexImage2D(GL_TEXTURE_2D, 0, format,
-                             width, height, 0,
-                             format, GL_UNSIGNED_BYTE, data);
-                glGenerateMipmap(GL_TEXTURE_2D);
-
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-                stbi_image_free(data);
-
-                texture.typeName = typeName;
-                texture.path = fullPath;
-
-                textures.push_back(texture);
-                texturesLoaded.push_back(texture);
-            }
-            else
-            {
-                std::cout << "Failed to load texture data from: " << fullPath << std::endl;
-                stbi_image_free(data);
-            }
+            // Async-safe path: keep texture metadata only.
+            // GPU upload is deferred to Mesh::Draw on the render thread.
+            Texture texture;
+            texture.ID = 0;
+            texture.typeName = typeName;
+            texture.path = fullPath;
+            texture.type = GL_TEXTURE_2D;
+            textures.push_back(texture);
         }
     }
 

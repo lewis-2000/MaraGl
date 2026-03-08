@@ -14,6 +14,8 @@ public:
     std::string path;
     GLenum type;
 
+    Texture() : ID(0), type(GL_TEXTURE_2D) {} // Default constructor
+
     Texture(const char *image,
             GLenum texType,
             GLenum slot,

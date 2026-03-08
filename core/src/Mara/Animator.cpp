@@ -39,10 +39,20 @@ namespace MaraGl
         }
     }
 
+    glm::mat4 Animator::GetGlobalInverseTransform(const aiScene *scene)
+    {
+        if (!scene || !scene->mRootNode)
+            return glm::mat4(1.0f);
+
+        glm::mat4 rootTransform = ConvertMatrixToGLM(scene->mRootNode->mTransformation);
+        return glm::inverse(rootTransform);
+    }
+
     void Animator::CalculateBoneTransform(AnimationComponent *animComp,
                                           const Animation &animation,
                                           const aiNode *node,
-                                          const glm::mat4 &parentTransform)
+                                          const glm::mat4 &parentTransform,
+                                          const glm::mat4 &globalInverseTransform)
     {
         if (!node)
             return;
@@ -70,14 +80,23 @@ namespace MaraGl
         if (it != animComp->boneInfoMap.end())
         {
             int boneIndex = it->second.id;
-            glm::mat4 offset = it->second.offset;
-            animComp->boneTransforms[boneIndex] = globalTransform * offset;
+            if (boneIndex >= 0 && boneIndex < (int)animComp->boneTransforms.size())
+            {
+                glm::mat4 offset = it->second.offset;
+                // Convert from model/node space to mesh space for shader skinning.
+                animComp->boneTransforms[boneIndex] = globalInverseTransform * globalTransform * offset;
+            }
+            else
+            {
+                std::cout << "[Animator] ERROR: Bone '" << nodeName << "' has invalid index "
+                          << boneIndex << " (array size: " << animComp->boneTransforms.size() << ")" << std::endl;
+            }
         }
 
         // Recursively process all children (even those without animation channels)
         for (unsigned int i = 0; i < node->mNumChildren; i++)
         {
-            CalculateBoneTransform(animComp, animation, node->mChildren[i], globalTransform);
+            CalculateBoneTransform(animComp, animation, node->mChildren[i], globalTransform, globalInverseTransform);
         }
     }
 

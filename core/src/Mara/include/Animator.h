@@ -17,11 +17,15 @@ namespace MaraGl
         // Update animation and calculate bone transforms
         static void UpdateAnimation(AnimationComponent *animComp, float deltaTime);
 
+        // Returns inverse of scene root transform used for correct skinning space.
+        static glm::mat4 GetGlobalInverseTransform(const aiScene *scene);
+
         // Calculate bone transformation hierarchy
         static void CalculateBoneTransform(AnimationComponent *animComp,
                                            const Animation &animation,
                                            const aiNode *node,
-                                           const glm::mat4 &parentTransform);
+                                           const glm::mat4 &parentTransform,
+                                           const glm::mat4 &globalInverseTransform);
 
     private:
         // Interpolation helpers

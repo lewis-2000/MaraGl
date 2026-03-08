@@ -38,10 +38,14 @@ namespace MaraGl
 
         // Pass scene to ImGuiLayer
         m_ImGuiLayer.SetScene(&m_Scene);
+
+        // Pass asset loader to ImGuiLayer
+        m_ImGuiLayer.SetAssetLoader(&m_AssetLoader);
     }
 
     AppLayer::~AppLayer()
     {
+        Mesh::ClearTextureCache();
     }
 
     void AppLayer::processEvents()
@@ -55,8 +59,10 @@ namespace MaraGl
         m_Timer.Update();
         float deltaTime = m_Timer.GetDeltaTime();
 
-        // Always update input first, before ImGui
-        Input::Update();
+        // Process completed async loads on the main thread
+        m_AssetLoader.ProcessCompletedLoads();
+
+        // Input is sampled once per frame in processEvents().
 
         // Update scene and panels
         m_Scene.Update(deltaTime);
@@ -67,33 +73,65 @@ namespace MaraGl
         bool sceneFocused = scenePanel ? scenePanel->IsFocused() : false;
 
         auto &camera = m_Renderer.GetCamera();
+        const auto &savedCamera = m_Scene.GetCameraSettings();
+        camera.SetEditorPosition(savedCamera.Position);
+        camera.SetYawPitch(savedCamera.Yaw, savedCamera.Pitch);
+        camera.SetMoveSpeed(savedCamera.MoveSpeed);
+        camera.SetMouseSensitivity(savedCamera.MouseSensitivity);
+        camera.SetFOV(savedCamera.FOV);
+        camera.SetClipPlanes(savedCamera.NearClip, savedCamera.FarClip);
         camera.Update(deltaTime, sceneFocused);
+
+        Scene::CameraSettings liveCamera;
+        liveCamera.Position = camera.GetEditorPosition();
+        liveCamera.Yaw = camera.GetYaw();
+        liveCamera.Pitch = camera.GetPitch();
+        liveCamera.MoveSpeed = camera.GetMoveSpeed();
+        liveCamera.MouseSensitivity = camera.GetMouseSensitivity();
+        liveCamera.FOV = camera.GetFOV();
+        liveCamera.NearClip = camera.GetNearClip();
+        liveCamera.FarClip = camera.GetFarClip();
+        m_Scene.SetCameraSettings(liveCamera);
 
         // Compile once, reuse every frame
         static ::Shader shader("resources/shaders/basic.vert", "resources/shaders/basic.frag");
 
-        auto createModelEntity = [this](const std::string &modelPath, const std::string &fallbackName) -> bool
+        auto loadModelAsync = [this](const std::string &modelPath, const std::string &fallbackName)
         {
-            auto model = std::make_shared<Model>(modelPath);
-
             std::filesystem::path path(modelPath);
             std::string entityName = path.stem().string();
             if (entityName.empty())
                 entityName = fallbackName;
 
-            Entity &entity = m_Scene.CreateEntity(entityName);
-            auto &nameComp = entity.AddComponent<NameComponent>();
-            nameComp.Name = entityName;
-            entity.AddComponent<TransformComponent>();
-            auto &meshComp = entity.AddComponent<MeshComponent>();
-            meshComp.ModelPtr = model;
-            meshComp.ModelPath = path.string();
+            std::cout << "[AppLayer] Queuing async load for: " << modelPath << " as entity: " << entityName << std::endl;
 
-            if (auto *hierarchyPanel = m_ImGuiLayer.GetHierarchyPanel())
-                hierarchyPanel->SetSelectedEntityID(entity.GetID());
+            m_AssetLoader.LoadModelAsync(modelPath, entityName,
+                                         [this, modelPath, entityName](std::shared_ptr<Model> model, bool success, const std::string &errorMsg)
+                                         {
+                                             std::cout << "[AppLayer] Async load callback received for: " << entityName
+                                                       << " success=" << success << " model=" << (bool)model << std::endl;
 
-            std::cout << "Loaded model into entity: " << entityName << std::endl;
-            return true;
+                                             if (success && model)
+                                             {
+                                                 std::cout << "[AppLayer] Creating entity with loaded model" << std::endl;
+                                                 Entity &entity = m_Scene.CreateEntity(entityName);
+                                                 auto &nameComp = entity.AddComponent<NameComponent>();
+                                                 nameComp.Name = entityName;
+                                                 entity.AddComponent<TransformComponent>();
+                                                 auto &meshComp = entity.AddComponent<MeshComponent>();
+                                                 meshComp.ModelPtr = model;
+                                                 meshComp.ModelPath = modelPath;
+
+                                                 if (auto *hierarchyPanel = m_ImGuiLayer.GetHierarchyPanel())
+                                                     hierarchyPanel->SetSelectedEntityID(entity.GetID());
+
+                                                 std::cout << "Loaded model into entity: " << entityName << " with ID " << entity.GetID() << std::endl;
+                                             }
+                                             else
+                                             {
+                                                 std::cerr << "Failed to load model: " << errorMsg << std::endl;
+                                             }
+                                         });
         };
 
         // Load requests are handled before rendering so all panels reflect new entities immediately.
@@ -101,29 +139,15 @@ namespace MaraGl
         if (loaderPanel && loaderPanel->ShouldLoadModel())
         {
             std::string modelPath = loaderPanel->GetSelectedModelPath();
-            try
-            {
-                createModelEntity(modelPath, "ModelEntity");
-            }
-            catch (const std::exception &e)
-            {
-                std::cerr << "Error loading model from: " << modelPath << "\n"
-                          << e.what() << std::endl;
-            }
+            loadModelAsync(modelPath, "ModelEntity");
         }
 
         // Auto-load default model after startup.
         m_FrameCount++;
         if (!m_ModelLoaded && m_FrameCount >= 2)
         {
-            try
-            {
-                m_ModelLoaded = createModelEntity("resources/models/Tree/trees9.obj", "DefaultTree");
-            }
-            catch (const std::exception &e)
-            {
-                std::cerr << "Error loading default model: " << e.what() << std::endl;
-            }
+            loadModelAsync("resources/models/Tree/trees9.obj", "DefaultTree");
+            m_ModelLoaded = true;
         }
 
         // 1) Render scene into offscreen framebuffer
