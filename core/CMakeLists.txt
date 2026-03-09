@@ -42,6 +42,7 @@ set(VENDOR_DIR ${CMAKE_SOURCE_DIR}/vendor)
 target_include_directories(core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Mara/include
     ${VENDOR_DIR}/nlohmann
+    ${VENDOR_DIR}/tinyexr
 )
 
 # ----------------------------

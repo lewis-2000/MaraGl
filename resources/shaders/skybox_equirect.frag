@@ -4,6 +4,7 @@ in vec3 TexCoords;
 out vec4 FragColor;
 
 uniform sampler2D equirectangularMap;
+uniform float exposure = 1.0;
 
 const vec2 invAtan = vec2(0.1591, 0.3183);
 
@@ -19,5 +20,12 @@ void main()
 {
     vec2 uv = SampleSphericalMap(normalize(TexCoords));
     vec3 color = texture(equirectangularMap, uv).rgb;
+    
+    // Apply exposure and tone mapping for HDR
+    color = vec3(1.0) - exp(-color * exposure);
+    
+    // Simple gamma correction
+    color = pow(color, vec3(1.0/2.2));
+    
     FragColor = vec4(color, 1.0);
 }

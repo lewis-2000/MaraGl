@@ -1,291 +1,170 @@
 {
-    "entities": [
-        {
-            "id": 1,
-            "name": {
-                "value": "TestEntity1"
-            },
-            "transform": {
-                "position": [
-                    0.0,
-                    0.0,
-                    0.0
-                ],
-                "rotation": [
-                    0.0,
-                    0.0,
-                    0.0
-                ],
-                "scale": [
-                    1.0,
-                    1.0,
-                    1.0
-                ]
-            }
-        },
-        {
-            "id": 2,
-            "name": {
-                "value": "TestEntity2"
-            },
-            "transform": {
-                "position": [
-                    2.0,
-                    0.0,
-                    0.0
-                ],
-                "rotation": [
-                    0.0,
-                    0.0,
-                    0.0
-                ],
-                "scale": [
-                    1.0,
-                    1.0,
-                    1.0
-                ]
-            }
-        },
-        {
-            "id": 3,
-            "mesh": {
-                "modelPath": "resources/models/Tree/trees9.obj",
-                "scale": 0.20999999344348907,
-                "visible": true
-            },
-            "name": {
-                "value": "trees1"
-            },
-            "transform": {
-                "position": [
-                    -0.6000000238418579,
-                    -2.200000047683716,
-                    0.0
-                ],
-                "rotation": [
-                    0.0,
-                    0.0,
-                    0.0
-                ],
-                "scale": [
-                    1.0,
-                    1.0,
-                    1.0
-                ]
-            }
-        },
-        {
-            "id": 4,
-            "light": {
-                "color": [
-                    0.5714285373687744,
-                    0.06834360212087631,
-                    0.06834360212087631
-                ],
-                "enabled": true,
-                "innerAngle": 15.0,
-                "intensity": 1.0,
-                "outerAngle": 25.0,
-                "range": 10.0,
-                "type": 2
-            },
-            "name": {
-                "value": "Light1"
-            },
-            "transform": {
-                "position": [
-                    1.7000000476837158,
-                    -1.899999976158142,
-                    0.0
-                ],
-                "rotation": [
-                    0.0,
-                    0.0,
-                    0.0
-                ],
-                "scale": [
-                    1.0,
-                    1.0,
-                    1.0
-                ]
-            }
-        },
-        {
-            "id": 5,
-            "mesh": {
-                "modelPath": "C:\\Users\\flamm\\Dev\\Graphics\\MaraGl\\build\\sandbox\\resources\\models\\Tree\\trees9.obj",
-                "scale": 0.20999999344348907,
-                "visible": true
-            },
-            "name": {
-                "value": "trees2"
-            },
-            "transform": {
-                "position": [
-                    0.10000000149011612,
-                    -2.299999952316284,
-                    3.799999952316284
-                ],
-                "rotation": [
-                    0.0,
-                    0.0,
-                    0.0
-                ],
-                "scale": [
-                    1.0,
-                    1.0,
-                    1.0
-                ]
-            }
-        },
-        {
-            "id": 6,
-            "light": {
-                "color": [
-                    0.8372092843055725,
-                    0.7329381108283997,
-                    0.4923124313354492
-                ],
-                "enabled": true,
-                "innerAngle": 15.0,
-                "intensity": 1.0,
-                "outerAngle": 25.0,
-                "range": 10.0,
-                "type": 0
-            },
-            "name": {
-                "value": "Sun"
-            },
-            "transform": {
-                "position": [
-                    0.0,
-                    12.0,
-                    0.0
-                ],
-                "rotation": [
-                    0.0,
-                    0.0,
-                    0.0
-                ],
-                "scale": [
-                    1.0,
-                    1.0,
-                    1.0
-                ]
-            }
-        },
-        {
-            "id": 7,
-            "mesh": {
-                "modelPath": "C:\\Users\\flamm\\Dev\\Graphics\\MaraGl\\build\\sandbox\\resources\\models\\Dragon\\Dragon 2.5_fbx.fbx",
-                "scale": 0.10999999940395355,
-                "visible": true
-            },
-            "name": {
-                "value": "Dragon 2.5_fbx"
-            },
-            "transform": {
-                "position": [
-                    0.0,
-                    9.399999618530273,
-                    0.0
-                ],
-                "rotation": [
-                    -45.0,
-                    1.0,
-                    -14.0
-                ],
-                "scale": [
-                    1.0,
-                    1.0,
-                    1.0
-                ]
-            }
-        },
-        {
-            "id": 8,
-            "mesh": {
-                "modelPath": "C:\\Users\\flamm\\Dev\\Graphics\\MaraGl\\build\\sandbox\\resources\\models\\Anim1\\Thriller Part 3.fbx",
-                "scale": 0.009999999776482582,
-                "visible": true
-            },
-            "name": {
-                "value": "Thriller Part 3"
-            },
-            "transform": {
-                "position": [
-                    0.0,
-                    -2.0,
-                    7.099999904632568
-                ],
-                "rotation": [
-                    0.0,
-                    0.0,
-                    0.0
-                ],
-                "scale": [
-                    1.0,
-                    1.0,
-                    1.0
-                ]
-            }
-        },
-        {
-            "id": 9,
-            "mesh": {
-                "modelPath": "C:\\Users\\flamm\\Dev\\Graphics\\MaraGl\\build\\sandbox\\resources\\models\\Anim1\\Shoved Reaction With Spin.fbx",
-                "scale": 0.009999999776482582,
-                "visible": true
-            },
-            "name": {
-                "value": "Person2"
-            },
-            "transform": {
-                "position": [
-                    -2.700000047683716,
-                    -2.0,
-                    7.800000190734863
-                ],
-                "rotation": [
-                    0.0,
-                    0.0,
-                    0.0
-                ],
-                "scale": [
-                    1.0,
-                    1.0,
-                    1.0
-                ]
-            }
-        }
-    ],
-    "settings": {
-        "camera": {
-            "farClip": 100.0,
-            "fov": 45.0,
-            "mouseSensitivity": 0.009999999776482582,
-            "moveSpeed": 5.0,
-            "nearClip": 0.10000000149011612,
-            "pitch": 0.0,
-            "position": [
-                0.38543701171875,
-                0.0,
-                42.003448486328125
-            ],
-            "yaw": -1.5707963705062866
-        },
-        "overcast": {
-            "color": [
-                0.6000000238418579,
-                0.699999988079071,
-                0.800000011920929
-            ],
-            "enabled": true,
-            "intensity": 0.4000000059604645
-        },
-        "skybox": {
-            "enabled": false
-        }
+  "entities": [
+    {
+      "id": 1,
+      "name": {
+        "value": "TestEntity1"
+      },
+      "transform": {
+        "position": [0.0, 0.0, 0.0],
+        "rotation": [0.0, 0.0, 0.0],
+        "scale": [1.0, 1.0, 1.0]
+      }
     },
-    "version": "1.0"
+    {
+      "id": 2,
+      "name": {
+        "value": "TestEntity2"
+      },
+      "transform": {
+        "position": [2.0, 0.0, 0.0],
+        "rotation": [0.0, 0.0, 0.0],
+        "scale": [1.0, 1.0, 1.0]
+      }
+    },
+    {
+      "id": 3,
+      "mesh": {
+        "modelPath": "resources/models/Tree/trees9.obj",
+        "scale": 0.20999999344348907,
+        "visible": true
+      },
+      "name": {
+        "value": "trees1"
+      },
+      "transform": {
+        "position": [-0.6000000238418579, -2.200000047683716, 0.0],
+        "rotation": [0.0, 0.0, 0.0],
+        "scale": [1.0, 1.0, 1.0]
+      }
+    },
+    {
+      "id": 4,
+      "light": {
+        "color": [0.5714285373687744, 0.06834360212087631, 0.06834360212087631],
+        "enabled": true,
+        "innerAngle": 15.0,
+        "intensity": 1.0,
+        "outerAngle": 25.0,
+        "range": 10.0,
+        "type": 2
+      },
+      "name": {
+        "value": "Light1"
+      },
+      "transform": {
+        "position": [1.7000000476837158, -1.899999976158142, 0.0],
+        "rotation": [0.0, 0.0, 0.0],
+        "scale": [1.0, 1.0, 1.0]
+      }
+    },
+    {
+      "id": 5,
+      "mesh": {
+        "modelPath": "C:\\Users\\flamm\\Dev\\Graphics\\MaraGl\\build\\sandbox\\resources\\models\\Tree\\trees9.obj",
+        "scale": 0.20999999344348907,
+        "visible": true
+      },
+      "name": {
+        "value": "trees2"
+      },
+      "transform": {
+        "position": [
+          0.10000000149011612, -2.299999952316284, 3.799999952316284
+        ],
+        "rotation": [0.0, 0.0, 0.0],
+        "scale": [1.0, 1.0, 1.0]
+      }
+    },
+    {
+      "id": 6,
+      "light": {
+        "color": [0.8372092843055725, 0.7329381108283997, 0.4923124313354492],
+        "enabled": true,
+        "innerAngle": 15.0,
+        "intensity": 1.0,
+        "outerAngle": 25.0,
+        "range": 10.0,
+        "type": 0
+      },
+      "name": {
+        "value": "Sun"
+      },
+      "transform": {
+        "position": [0.0, 12.0, 0.0],
+        "rotation": [0.0, 0.0, 0.0],
+        "scale": [1.0, 1.0, 1.0]
+      }
+    },
+    {
+      "id": 7,
+      "mesh": {
+        "modelPath": "C:\\Users\\flamm\\Dev\\Graphics\\MaraGl\\build\\sandbox\\resources\\models\\Dragon\\Dragon 2.5_fbx.fbx",
+        "scale": 0.10999999940395355,
+        "visible": true
+      },
+      "name": {
+        "value": "Dragon 2.5_fbx"
+      },
+      "transform": {
+        "position": [0.0, 9.399999618530273, 0.0],
+        "rotation": [-45.0, 1.0, -14.0],
+        "scale": [1.0, 1.0, 1.0]
+      }
+    },
+    {
+      "id": 8,
+      "mesh": {
+        "modelPath": "C:\\Users\\flamm\\Dev\\Graphics\\MaraGl\\build\\sandbox\\resources\\models\\Anim1\\Thriller Part 3.fbx",
+        "scale": 0.009999999776482582,
+        "visible": true
+      },
+      "name": {
+        "value": "Thriller Part 3"
+      },
+      "transform": {
+        "position": [0.0, -2.0, 7.099999904632568],
+        "rotation": [0.0, 0.0, 0.0],
+        "scale": [1.0, 1.0, 1.0]
+      }
+    },
+    {
+      "id": 9,
+      "mesh": {
+        "modelPath": "C:\\Users\\flamm\\Dev\\Graphics\\MaraGl\\build\\sandbox\\resources\\models\\Anim1\\Shoved Reaction With Spin.fbx",
+        "scale": 0.009999999776482582,
+        "visible": true
+      },
+      "name": {
+        "value": "Person2"
+      },
+      "transform": {
+        "position": [-2.700000047683716, -2.0, 7.800000190734863],
+        "rotation": [0.0, 0.0, 0.0],
+        "scale": [1.0, 1.0, 1.0]
+      }
+    }
+  ],
+  "settings": {
+    "camera": {
+      "farClip": 100.0,
+      "fov": 45.0,
+      "mouseSensitivity": 0.009999999776482582,
+      "moveSpeed": 5.0,
+      "nearClip": 0.10000000149011612,
+      "pitch": 0.0,
+      "position": [0.38543701171875, 0.0, 42.003448486328125],
+      "yaw": -1.5707963705062866
+    },
+    "overcast": {
+      "color": [0.6000000238418579, 0.699999988079071, 0.800000011920929],
+      "enabled": true,
+      "intensity": 0.4000000059604645
+    },
+    "skybox": {
+      "enabled": true,
+      "path": "resources/skybox/citrus_orchard_road_puresky_2k.exr"
+    }
+  },
+  "version": "1.0"
 }

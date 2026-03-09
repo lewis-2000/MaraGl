@@ -347,8 +347,7 @@ namespace MaraGl
 
         // Skybox settings
         j["skybox"]["enabled"] = scene->IsSkyboxEnabled();
-        // Note: We don't have a way to get the skybox path currently
-        // You might want to add a member to Scene to track this
+        j["skybox"]["path"] = scene->GetSkyboxPath();
 
         // Overcast light settings
         j["overcast"]["enabled"] = scene->IsOvercastEnabled();
@@ -382,6 +381,10 @@ namespace MaraGl
             if (j["skybox"].contains("path"))
             {
                 std::string skyboxPath = j["skybox"]["path"];
+                std::cout << "[SceneSerializer] Skybox settings found. enabled="
+                          << scene->IsSkyboxEnabled()
+                          << " path='" << skyboxPath << "'"
+                          << std::endl;
                 if (!skyboxPath.empty())
                 {
                     scene->LoadSkybox(skyboxPath);

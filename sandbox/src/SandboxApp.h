@@ -6,7 +6,9 @@
 #include "Input.h"
 #include "Shader.h"
 #include "AssetLoader.h"
+#include <atomic>
 #include <memory>
+#include <string>
 
 namespace MaraGl
 {
@@ -30,5 +32,9 @@ namespace MaraGl
         Timer m_Timer;
         AssetLoader m_AssetLoader;
         bool m_SceneLoaded = false;
+        std::string m_BaseTitle;
+        std::atomic<int> m_PendingModelLoads{0};
+        std::atomic<int> m_FailedModelLoads{0};
+        bool m_LoadCompleteAnnounced = false;
     };
 }

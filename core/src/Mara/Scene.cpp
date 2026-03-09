@@ -13,6 +13,7 @@
 #include "AnimationComponent.h"
 #include "Animator.h"
 #include <algorithm>
+#include <iostream>
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -132,35 +133,76 @@ namespace MaraGl
 
     void Scene::Render(Renderer &renderer, ::Shader &shader)
     {
+        static int s_SkyboxSkipLogCounter = 0;
+
         // Render skybox first if enabled
         if (m_SkyboxEnabled && m_Skybox)
         {
-            // Create appropriate skybox shader
-            static ::Shader *cubemapShader = nullptr;
-            static ::Shader *equirectShader = nullptr;
-
-            ::Shader *skyboxShader = nullptr;
-            if (m_Skybox->IsEquirectangular())
+            const bool hasAnySkyboxTexture = (m_Skybox->GetEquirectTexture() != 0) || (m_Skybox->GetCubemapTexture() != 0);
+            if (!hasAnySkyboxTexture)
             {
-                if (!equirectShader)
-                    equirectShader = new ::Shader("resources/shaders/skybox.vert", "resources/shaders/skybox_equirect.frag");
-                skyboxShader = equirectShader;
+                static bool s_LoggedNoSkyboxTexture = false;
+                if (!s_LoggedNoSkyboxTexture)
+                {
+                    std::cerr << "[Skybox] Enabled but no GPU texture is loaded. Skipping draw." << std::endl;
+                    s_LoggedNoSkyboxTexture = true;
+                }
             }
             else
             {
-                if (!cubemapShader)
-                    cubemapShader = new ::Shader("resources/shaders/skybox.vert", "resources/shaders/skybox.frag");
-                skyboxShader = cubemapShader;
+                // Create appropriate skybox shader
+                static ::Shader *cubemapShader = nullptr;
+                static ::Shader *equirectShader = nullptr;
+
+                ::Shader *skyboxShader = nullptr;
+                if (m_Skybox->IsEquirectangular())
+                {
+                    if (!equirectShader)
+                        equirectShader = new ::Shader("resources/shaders/skybox.vert", "resources/shaders/skybox_equirect.frag");
+                    skyboxShader = equirectShader;
+                }
+                else
+                {
+                    if (!cubemapShader)
+                        cubemapShader = new ::Shader("resources/shaders/skybox.vert", "resources/shaders/skybox.frag");
+                    skyboxShader = cubemapShader;
+                }
+
+                skyboxShader->use();
+                // Remove translation so the skybox remains infinitely distant.
+                glm::mat4 skyboxView = glm::mat4(glm::mat3(renderer.GetCamera().GetView()));
+                skyboxShader->setMat4("view", skyboxView);
+                skyboxShader->setMat4("projection", renderer.GetCamera().GetProjection());
+
+                // Set exposure for HDR tone mapping (adjust this value to control brightness)
+                if (m_Skybox->IsEquirectangular())
+                {
+                    skyboxShader->setFloat("exposure", 1.0f);
+                }
+
+                static bool s_LoggedSkyboxRenderInfo = false;
+                if (!s_LoggedSkyboxRenderInfo)
+                {
+                    std::cout << "[Skybox] Render path active. type="
+                              << (m_Skybox->IsEquirectangular() ? "equirect" : "cubemap")
+                              << " equirectTex=" << m_Skybox->GetEquirectTexture()
+                              << " cubemapTex=" << m_Skybox->GetCubemapTexture()
+                              << " enabled=" << m_SkyboxEnabled
+                              << std::endl;
+                    s_LoggedSkyboxRenderInfo = true;
+                }
+
+                // Render skybox with depth cleared to max
+                glDepthFunc(GL_LEQUAL);
+                m_Skybox->Draw(*skyboxShader);
+                glDepthFunc(GL_LESS);
             }
-
-            skyboxShader->use();
-            skyboxShader->setMat4("view", renderer.GetCamera().GetView());
-            skyboxShader->setMat4("projection", renderer.GetCamera().GetProjection());
-
-            // Render skybox with depth cleared to max
-            glDepthFunc(GL_LEQUAL);
-            m_Skybox->Draw(*skyboxShader);
-            glDepthFunc(GL_LESS);
+        }
+        else if ((s_SkyboxSkipLogCounter++ % 180) == 0)
+        {
+            std::cout << "[Skybox] Skipped render. enabled=" << m_SkyboxEnabled
+                      << " hasSkyboxObj=" << (m_Skybox ? 1 : 0)
+                      << std::endl;
         }
 
         // Update all lights in shader before rendering
@@ -309,9 +351,22 @@ namespace MaraGl
         if (!m_Skybox)
             m_Skybox = std::make_unique<::Skybox>();
 
+        std::cout << "[Skybox] Loading equirect path: " << skyboxPath << std::endl;
+
         bool success = m_Skybox->LoadEquirectangular(skyboxPath);
         if (success)
+        {
             m_SkyboxEnabled = true;
+            m_SkyboxPath = skyboxPath;
+            std::cout << "[Skybox] Load success. equirectTex=" << m_Skybox->GetEquirectTexture()
+                      << " enabled=" << m_SkyboxEnabled << std::endl;
+        }
+        else
+        {
+            m_SkyboxEnabled = false;
+            m_SkyboxPath.clear();
+            std::cerr << "[Skybox] Load failed for path: " << skyboxPath << std::endl;
+        }
 
         return success;
     }
@@ -336,5 +391,8 @@ namespace MaraGl
         }
         m_Entities.clear();
         m_NextID = 1;
+        m_Skybox.reset();
+        m_SkyboxEnabled = false;
+        m_SkyboxPath.clear();
     }
 }
