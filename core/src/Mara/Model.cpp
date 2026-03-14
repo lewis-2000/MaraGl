@@ -304,10 +304,10 @@ std::vector<MaraGl::Animation> Model::LoadAnimations()
         // Debug: Show animation channels
         std::cout << "[LoadAnimations] Animation '" << animation.name
                   << "' has " << anim->mNumChannels << " channels:" << std::endl;
-        for (unsigned int c = 0; c < anim->mNumChannels; c++)
-        {
-            std::cout << "  - " << anim->mChannels[c]->mNodeName.C_Str() << std::endl;
-        }
+        // for (unsigned int c = 0; c < anim->mNumChannels; c++)
+        // {
+        //     std::cout << "  - " << anim->mChannels[c]->mNodeName.C_Str() << std::endl;
+        // }
 
         // Load animation channels
         for (unsigned int channelIndex = 0; channelIndex < anim->mNumChannels; channelIndex++)

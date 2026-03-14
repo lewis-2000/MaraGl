@@ -5,6 +5,7 @@
 #include "TransformComponent.h"
 #include "MeshComponent.h"
 #include "LightComponent.h"
+#include "AnimationComponent.h"
 #include "Model.h"
 #include <fstream>
 #include <iostream>
@@ -174,6 +175,11 @@ namespace MaraGl
             j["light"] = SerializeLight(light);
         }
 
+        if (auto *anim = entity->GetComponent<AnimationComponent>())
+        {
+            j["animationGraph"] = SerializeAnimationGraph(anim);
+        }
+
         return j;
     }
 
@@ -207,6 +213,11 @@ namespace MaraGl
         if (entityJson.contains("light"))
         {
             DeserializeLight(&entity, entityJson["light"]);
+        }
+
+        if (entityJson.contains("animationGraph"))
+        {
+            DeserializeAnimationGraph(&entity, entityJson["animationGraph"]);
         }
     }
 
@@ -338,6 +349,262 @@ namespace MaraGl
         if (j.contains("value"))
         {
             name.Name = j["value"];
+        }
+    }
+
+    json SceneSerializer::SerializeAnimationGraph(AnimationComponent *comp)
+    {
+        json j;
+        j["enabled"] = comp->graphEnabled;
+        j["activeState"] = comp->activeState;
+        j["entryNodePosition"] = {comp->entryNodePosition.x, comp->entryNodePosition.y};
+
+        j["library"] = json::array();
+        for (const auto &entry : comp->animationLibrary)
+        {
+            json entryJson;
+            entryJson["displayName"] = entry.displayName;
+            entryJson["sourceModelPath"] = entry.sourceModelPath;
+            entryJson["sourceClipIndex"] = entry.sourceClipIndex;
+            entryJson["durationSeconds"] = entry.durationSeconds;
+            entryJson["channelBoneNames"] = entry.channelBoneNames;
+            entryJson["rootTranslationDelta"] = {entry.rootTranslationDelta.x, entry.rootTranslationDelta.y, entry.rootTranslationDelta.z};
+            entryJson["rootRotationDeltaEuler"] = {entry.rootRotationDeltaEuler.x, entry.rootRotationDeltaEuler.y, entry.rootRotationDeltaEuler.z};
+            entryJson["rootScaleDelta"] = {entry.rootScaleDelta.x, entry.rootScaleDelta.y, entry.rootScaleDelta.z};
+            j["library"].push_back(entryJson);
+        }
+
+        j["states"] = json::array();
+        for (const auto &state : comp->graphStates)
+        {
+            json stateJson;
+            stateJson["name"] = state.name;
+            stateJson["libraryClip"] = state.libraryClip;
+            stateJson["modelPath"] = state.modelPath;
+            stateJson["clipIndex"] = state.clipIndex;
+            stateJson["loop"] = state.loop;
+            stateJson["nodePosition"] = {state.nodePosition.x, state.nodePosition.y};
+            stateJson["durationSeconds"] = state.durationSeconds;
+            stateJson["rootTranslationDelta"] = {state.rootTranslationDelta.x, state.rootTranslationDelta.y, state.rootTranslationDelta.z};
+            stateJson["rootRotationDeltaEuler"] = {state.rootRotationDeltaEuler.x, state.rootRotationDeltaEuler.y, state.rootRotationDeltaEuler.z};
+            stateJson["rootScaleDelta"] = {state.rootScaleDelta.x, state.rootScaleDelta.y, state.rootScaleDelta.z};
+            stateJson["rootMotionEnabled"] = state.rootMotionEnabled;
+            stateJson["rootMotionAllowVertical"] = state.rootMotionAllowVertical;
+            stateJson["rootMotionScale"] = state.rootMotionScale;
+            stateJson["rootMotionMaxSpeed"] = state.rootMotionMaxSpeed;
+            j["states"].push_back(stateJson);
+        }
+
+        j["transitions"] = json::array();
+        for (const auto &transition : comp->graphTransitions)
+        {
+            json transitionJson;
+            transitionJson["from"] = transition.fromState;
+            transitionJson["to"] = transition.toState;
+            transitionJson["trigger"] = transition.trigger;
+            j["transitions"].push_back(transitionJson);
+        }
+
+        j["inputs"] = json::array();
+        for (const auto &binding : comp->inputBindings)
+        {
+            json bindingJson;
+            bindingJson["trigger"] = binding.trigger;
+            bindingJson["key"] = binding.key;
+            j["inputs"].push_back(bindingJson);
+        }
+
+        return j;
+    }
+
+    void SceneSerializer::DeserializeAnimationGraph(Entity *entity, const json &j)
+    {
+        auto &anim = entity->AddComponent<AnimationComponent>();
+
+        if (j.contains("enabled"))
+            anim.graphEnabled = j["enabled"];
+        if (j.contains("activeState"))
+            anim.activeState = j["activeState"];
+        if (j.contains("entryNodePosition") && j["entryNodePosition"].is_array() && j["entryNodePosition"].size() >= 2)
+        {
+            anim.entryNodePosition = glm::vec2(j["entryNodePosition"][0],
+                                               j["entryNodePosition"][1]);
+        }
+
+        anim.animationLibrary.clear();
+        if (j.contains("library"))
+        {
+            for (const auto &entryJson : j["library"])
+            {
+                AnimationComponent::AnimationLibraryEntry entry;
+                if (entryJson.contains("displayName"))
+                    entry.displayName = entryJson["displayName"].get<std::string>();
+                if (entryJson.contains("sourceModelPath"))
+                    entry.sourceModelPath = entryJson["sourceModelPath"].get<std::string>();
+                if (entryJson.contains("sourceClipIndex"))
+                    entry.sourceClipIndex = entryJson["sourceClipIndex"].get<int>();
+                if (entryJson.contains("durationSeconds"))
+                    entry.durationSeconds = entryJson["durationSeconds"].get<float>();
+                if (entryJson.contains("channelBoneNames"))
+                    entry.channelBoneNames = entryJson["channelBoneNames"].get<std::vector<std::string>>();
+                if (entryJson.contains("rootTranslationDelta") && entryJson["rootTranslationDelta"].is_array() && entryJson["rootTranslationDelta"].size() >= 3)
+                {
+                    entry.rootTranslationDelta = glm::vec3(entryJson["rootTranslationDelta"][0],
+                                                           entryJson["rootTranslationDelta"][1],
+                                                           entryJson["rootTranslationDelta"][2]);
+                }
+                if (entryJson.contains("rootRotationDeltaEuler") && entryJson["rootRotationDeltaEuler"].is_array() && entryJson["rootRotationDeltaEuler"].size() >= 3)
+                {
+                    entry.rootRotationDeltaEuler = glm::vec3(entryJson["rootRotationDeltaEuler"][0],
+                                                             entryJson["rootRotationDeltaEuler"][1],
+                                                             entryJson["rootRotationDeltaEuler"][2]);
+                }
+                if (entryJson.contains("rootScaleDelta") && entryJson["rootScaleDelta"].is_array() && entryJson["rootScaleDelta"].size() >= 3)
+                {
+                    entry.rootScaleDelta = glm::vec3(entryJson["rootScaleDelta"][0],
+                                                     entryJson["rootScaleDelta"][1],
+                                                     entryJson["rootScaleDelta"][2]);
+                }
+                anim.animationLibrary.push_back(entry);
+            }
+        }
+
+        anim.graphStates.clear();
+        if (j.contains("states"))
+        {
+            for (const auto &stateJson : j["states"])
+            {
+                AnimationComponent::GraphState state;
+                if (stateJson.contains("name"))
+                    state.name = stateJson["name"].get<std::string>();
+                if (stateJson.contains("libraryClip"))
+                    state.libraryClip = stateJson["libraryClip"].get<int>();
+                if (stateJson.contains("modelPath"))
+                    state.modelPath = stateJson["modelPath"].get<std::string>();
+                if (stateJson.contains("clipIndex"))
+                    state.clipIndex = stateJson["clipIndex"].get<int>();
+                if (stateJson.contains("loop"))
+                    state.loop = stateJson["loop"].get<bool>();
+                if (stateJson.contains("nodePosition") && stateJson["nodePosition"].is_array() && stateJson["nodePosition"].size() >= 2)
+                {
+                    state.nodePosition = glm::vec2(stateJson["nodePosition"][0],
+                                                   stateJson["nodePosition"][1]);
+                }
+                if (stateJson.contains("durationSeconds"))
+                    state.durationSeconds = stateJson["durationSeconds"].get<float>();
+                if (stateJson.contains("rootTranslationDelta") && stateJson["rootTranslationDelta"].is_array() && stateJson["rootTranslationDelta"].size() >= 3)
+                {
+                    state.rootTranslationDelta = glm::vec3(stateJson["rootTranslationDelta"][0],
+                                                           stateJson["rootTranslationDelta"][1],
+                                                           stateJson["rootTranslationDelta"][2]);
+                }
+                if (stateJson.contains("rootRotationDeltaEuler") && stateJson["rootRotationDeltaEuler"].is_array() && stateJson["rootRotationDeltaEuler"].size() >= 3)
+                {
+                    state.rootRotationDeltaEuler = glm::vec3(stateJson["rootRotationDeltaEuler"][0],
+                                                             stateJson["rootRotationDeltaEuler"][1],
+                                                             stateJson["rootRotationDeltaEuler"][2]);
+                }
+                if (stateJson.contains("rootScaleDelta") && stateJson["rootScaleDelta"].is_array() && stateJson["rootScaleDelta"].size() >= 3)
+                {
+                    state.rootScaleDelta = glm::vec3(stateJson["rootScaleDelta"][0],
+                                                     stateJson["rootScaleDelta"][1],
+                                                     stateJson["rootScaleDelta"][2]);
+                }
+                if (stateJson.contains("rootMotionEnabled"))
+                    state.rootMotionEnabled = stateJson["rootMotionEnabled"].get<bool>();
+                if (stateJson.contains("rootMotionAllowVertical"))
+                    state.rootMotionAllowVertical = stateJson["rootMotionAllowVertical"].get<bool>();
+                if (stateJson.contains("rootMotionScale"))
+                    state.rootMotionScale = stateJson["rootMotionScale"].get<float>();
+                if (stateJson.contains("rootMotionMaxSpeed"))
+                    state.rootMotionMaxSpeed = stateJson["rootMotionMaxSpeed"].get<float>();
+                anim.graphStates.push_back(state);
+            }
+        }
+
+        if (anim.animationLibrary.empty())
+        {
+            for (auto &state : anim.graphStates)
+            {
+                if (state.modelPath.empty())
+                    continue;
+
+                int libraryIndex = -1;
+                for (size_t i = 0; i < anim.animationLibrary.size(); ++i)
+                {
+                    const auto &entry = anim.animationLibrary[i];
+                    if (entry.sourceModelPath == state.modelPath && entry.sourceClipIndex == state.clipIndex)
+                    {
+                        libraryIndex = static_cast<int>(i);
+                        break;
+                    }
+                }
+
+                if (libraryIndex == -1)
+                {
+                    AnimationComponent::AnimationLibraryEntry entry;
+                    entry.displayName = state.name;
+                    entry.sourceModelPath = state.modelPath;
+                    entry.sourceClipIndex = state.clipIndex;
+                    entry.durationSeconds = state.durationSeconds;
+                    entry.channelBoneNames.clear();
+                    entry.rootTranslationDelta = state.rootTranslationDelta;
+                    entry.rootRotationDeltaEuler = state.rootRotationDeltaEuler;
+                    entry.rootScaleDelta = state.rootScaleDelta;
+                    anim.animationLibrary.push_back(entry);
+                    libraryIndex = static_cast<int>(anim.animationLibrary.size()) - 1;
+                }
+
+                state.libraryClip = libraryIndex;
+            }
+        }
+        else
+        {
+            for (auto &state : anim.graphStates)
+            {
+                if (state.libraryClip >= 0 && state.libraryClip < static_cast<int>(anim.animationLibrary.size()))
+                    continue;
+
+                for (size_t i = 0; i < anim.animationLibrary.size(); ++i)
+                {
+                    const auto &entry = anim.animationLibrary[i];
+                    if (entry.sourceModelPath == state.modelPath && entry.sourceClipIndex == state.clipIndex)
+                    {
+                        state.libraryClip = static_cast<int>(i);
+                        break;
+                    }
+                }
+            }
+        }
+
+        anim.graphTransitions.clear();
+        if (j.contains("transitions"))
+        {
+            for (const auto &transitionJson : j["transitions"])
+            {
+                AnimationComponent::GraphTransition transition;
+                if (transitionJson.contains("from"))
+                    transition.fromState = transitionJson["from"].get<int>();
+                if (transitionJson.contains("to"))
+                    transition.toState = transitionJson["to"].get<int>();
+                if (transitionJson.contains("trigger"))
+                    transition.trigger = transitionJson["trigger"].get<std::string>();
+                anim.graphTransitions.push_back(transition);
+            }
+        }
+
+        anim.inputBindings.clear();
+        if (j.contains("inputs"))
+        {
+            for (const auto &inputJson : j["inputs"])
+            {
+                AnimationComponent::InputBinding input;
+                if (inputJson.contains("trigger"))
+                    input.trigger = inputJson["trigger"].get<std::string>();
+                if (inputJson.contains("key"))
+                    input.key = inputJson["key"].get<int>();
+                anim.inputBindings.push_back(input);
+            }
         }
     }
 

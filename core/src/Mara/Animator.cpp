@@ -1,6 +1,8 @@
 #include "Animator.h"
 #include "AnimationComponent.h"
 #include <glm/gtc/matrix_transform.hpp>
+#include <algorithm>
+#include <cctype>
 #include <iostream>
 
 namespace MaraGl
@@ -66,7 +68,40 @@ namespace MaraGl
         if (boneAnim)
         {
             // Interpolate position, rotation, and scale
-            glm::mat4 translation = InterpolatePosition(*boneAnim, animComp->currentTime);
+            glm::vec3 position = InterpolatePositionVec3(*boneAnim, animComp->currentTime);
+
+            const std::string lowerNodeName = [&nodeName]()
+            {
+                std::string name = nodeName;
+                std::transform(name.begin(), name.end(), name.begin(),
+                               [](unsigned char c)
+                               { return static_cast<char>(std::tolower(c)); });
+                return name;
+            }();
+
+            const bool isLikelyRootMotionBone =
+                (lowerNodeName.find("hips") != std::string::npos) ||
+                (lowerNodeName.find("pelvis") != std::string::npos) ||
+                (lowerNodeName.find("root") != std::string::npos);
+
+            if (isLikelyRootMotionBone && !boneAnim->positions.empty())
+            {
+                const glm::vec3 startPosition = boneAnim->positions.front().position;
+                position -= startPosition;
+
+                bool allowVerticalRootPose = false;
+                if (animComp->graphEnabled &&
+                    animComp->activeState >= 0 &&
+                    animComp->activeState < static_cast<int>(animComp->graphStates.size()))
+                {
+                    allowVerticalRootPose = animComp->graphStates[static_cast<size_t>(animComp->activeState)].rootMotionAllowVertical;
+                }
+
+                if (!allowVerticalRootPose)
+                    position.y = 0.0f;
+            }
+
+            glm::mat4 translation = glm::translate(glm::mat4(1.0f), position);
             glm::mat4 rotation = InterpolateRotation(*boneAnim, animComp->currentTime);
             glm::mat4 scale = InterpolateScale(*boneAnim, animComp->currentTime);
 
@@ -140,10 +175,10 @@ namespace MaraGl
         return midwayLength / framesDiff;
     }
 
-    glm::mat4 Animator::InterpolatePosition(const BoneAnimation &boneAnim, float animationTime)
+    glm::vec3 Animator::InterpolatePositionVec3(const BoneAnimation &boneAnim, float animationTime)
     {
         if (boneAnim.positions.size() == 1)
-            return glm::translate(glm::mat4(1.0f), boneAnim.positions[0].position);
+            return boneAnim.positions[0].position;
 
         int p0Index = FindPositionIndex(boneAnim, animationTime);
         int p1Index = p0Index + 1;
@@ -152,9 +187,14 @@ namespace MaraGl
                                            boneAnim.positions[p1Index].timeStamp,
                                            animationTime);
 
-        glm::vec3 finalPosition = glm::mix(boneAnim.positions[p0Index].position,
-                                           boneAnim.positions[p1Index].position,
-                                           scaleFactor);
+        return glm::mix(boneAnim.positions[p0Index].position,
+                        boneAnim.positions[p1Index].position,
+                        scaleFactor);
+    }
+
+    glm::mat4 Animator::InterpolatePosition(const BoneAnimation &boneAnim, float animationTime)
+    {
+        glm::vec3 finalPosition = InterpolatePositionVec3(boneAnim, animationTime);
 
         return glm::translate(glm::mat4(1.0f), finalPosition);
     }

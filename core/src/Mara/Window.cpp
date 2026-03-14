@@ -33,7 +33,7 @@ namespace MaraGl
             int code = glfwGetError(&description);
             Logger::error(std::string("Failed to create GLFW window: ") + (description ? description : "unknown"));
             glfwTerminate();
-            throw std::runtime_error("Failed to create GLFW window");
+            Logger::runtimeError("Failed to create GLFW window");
         }
 
         // Make context current

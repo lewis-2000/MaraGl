@@ -6,6 +6,7 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <cstdint>
 #include <imgui.h>
 
 namespace MaraGl
@@ -58,9 +59,62 @@ namespace MaraGl
 
     struct AnimationComponent : public Component
     {
+        struct AnimationLibraryEntry
+        {
+            std::string displayName;
+            std::string sourceModelPath;
+            int sourceClipIndex = 0;
+            float durationSeconds = 0.0f;
+            std::vector<std::string> channelBoneNames;
+            glm::vec3 rootTranslationDelta = glm::vec3(0.0f);
+            glm::vec3 rootRotationDeltaEuler = glm::vec3(0.0f);
+            glm::vec3 rootScaleDelta = glm::vec3(0.0f);
+            int resolvedAnimationIndex = -1;
+        };
+
+        struct GraphState
+        {
+            std::string name;
+            int libraryClip = -1;
+            std::string modelPath; // Legacy fallback for old scene data.
+            int clipIndex = 0;     // Legacy fallback for old scene data.
+            bool loop = true;
+            glm::vec2 nodePosition = glm::vec2(0.0f);
+            float durationSeconds = 0.0f;
+            glm::vec3 rootTranslationDelta = glm::vec3(0.0f);
+            glm::vec3 rootRotationDeltaEuler = glm::vec3(0.0f);
+            glm::vec3 rootScaleDelta = glm::vec3(0.0f);
+            bool rootMotionEnabled = true;
+            bool rootMotionAllowVertical = false;
+            float rootMotionScale = 1.0f;
+            float rootMotionMaxSpeed = 4.0f;
+        };
+
+        struct GraphTransition
+        {
+            int fromState = 0;
+            int toState = 0;
+            std::string trigger;
+        };
+
+        struct InputBinding
+        {
+            std::string trigger;
+            int key = -1;
+        };
+
         std::vector<Animation> animations;
         std::map<std::string, BoneInfo> boneInfoMap;
         std::vector<glm::mat4> boneTransforms; // Final transforms sent to shader
+
+        // Animation graph authoring/runtime data.
+        bool graphEnabled = false;
+        int activeState = 0;
+        glm::vec2 entryNodePosition = glm::vec2(-280.0f, 60.0f);
+        std::vector<AnimationLibraryEntry> animationLibrary;
+        std::vector<GraphState> graphStates;
+        std::vector<GraphTransition> graphTransitions;
+        std::vector<InputBinding> inputBindings;
 
         int currentAnimation = 0;
         float currentTime = 0.0f;
@@ -71,6 +125,7 @@ namespace MaraGl
         void OnImGuiRender() override
         {
             ImGui::Text("Animations: %zu", animations.size());
+            ImGui::Text("Graph States: %zu", graphStates.size());
 
             if (animations.empty())
             {

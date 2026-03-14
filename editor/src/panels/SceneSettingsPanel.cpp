@@ -1,6 +1,7 @@
 #include "SceneSettingsPanel.h"
 #include "Scene.h"
 #include "AssetLoader.h"
+#include "AnimationComponent.h"
 #include <imgui.h>
 #include <filesystem>
 #include <iostream>
@@ -19,9 +20,40 @@ namespace MaraGl
             return;
         }
 
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Text("Animation Playback");
+        ImGui::Separator();
+
+        if (ImGui::Checkbox("Play Animations##global", &m_AnimationPlaying))
+        {
+            // Update all entities with animation components
+            for (auto &entity : m_Scene->GetEntities())
+            {
+                auto *animComp = entity->GetComponent<AnimationComponent>();
+                if (animComp)
+                {
+                    animComp->playing = m_AnimationPlaying;
+                }
+            }
+        }
+
+        if (ImGui::SliderFloat("Playback Speed##global", &m_PlaybackSpeed, 0.0f, 3.0f))
+        {
+            // Update all entities with animation components
+            for (auto &entity : m_Scene->GetEntities())
+            {
+                auto *animComp = entity->GetComponent<AnimationComponent>();
+                if (animComp)
+                {
+                    animComp->playbackSpeed = m_PlaybackSpeed;
+                }
+            }
+        }
+
+        ImGui::Spacing();
         ImGui::Separator();
         ImGui::Text("Lighting");
-        ImGui::Separator();
 
         // Overcast light toggle and settings
         bool overcastEnabled = m_Scene->IsOvercastEnabled();

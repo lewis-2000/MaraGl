@@ -1,6 +1,11 @@
 project(Core)
 
 # ----------------------------
+# Vendor path
+# ----------------------------
+set(VENDOR_DIR ${CMAKE_SOURCE_DIR}/vendor)
+
+# ----------------------------
 # Core library
 # ----------------------------
 add_library(core STATIC)
@@ -29,12 +34,8 @@ target_sources(core PRIVATE
     src/Mara/SceneSerializer.cpp
     src/Mara/Animator.cpp
     src/Mara/AssetLoader.cpp
+    ${VENDOR_DIR}/imnodes/imnodes.cpp
  )
-
-# ----------------------------
-# Vendor path
-# ----------------------------
-set(VENDOR_DIR ${CMAKE_SOURCE_DIR}/vendor)
 
 # ----------------------------
 # Public headers
@@ -43,6 +44,8 @@ target_include_directories(core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Mara/include
     ${VENDOR_DIR}/nlohmann
     ${VENDOR_DIR}/tinyexr
+    ${VENDOR_DIR}/imnodes
+    ${VENDOR_DIR}/assimp/contrib/zip/src
 )
 
 # ----------------------------

@@ -5,6 +5,7 @@
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 #include <imgui_internal.h>
+#include <imnodes.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
 
@@ -29,6 +30,7 @@ namespace MaraGl
     {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
+        ImNodes::CreateContext();
 
         ImGuiIO &io = ImGui::GetIO();
         // Enable keyboard navigation (Tab/Arrows/Enter to navigate UI)
@@ -148,6 +150,7 @@ namespace MaraGl
     // Called during destruction
     void ImGuiLayer::shutdown()
     {
+        ImNodes::DestroyContext();
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
@@ -188,6 +191,7 @@ namespace MaraGl
             m_Framebuffer = framebuffer;
             m_InspectorPanel = m_PanelManager.AddPanel<InspectorPanel>();
             m_ScenePanel = m_PanelManager.AddPanel<ScenePanel>(m_Framebuffer);
+            m_AnimationGraphPanel = m_PanelManager.AddPanel<AnimationGraphPanel>();
             m_HierarchyPanel = m_PanelManager.AddPanel<HierarchyPanel>();
             m_ModelLoaderPanel = m_PanelManager.AddPanel<ModelLoaderPanel>();
             m_TimelinePanel = m_PanelManager.AddPanel<EditorTimelinePanel>();
@@ -260,6 +264,7 @@ namespace MaraGl
                 // --- Dock windows ---
                 ImGui::DockBuilderDockWindow("Hierarchy", dock_left);
                 ImGui::DockBuilderDockWindow("Scene", dock_scene);
+                ImGui::DockBuilderDockWindow("Animation Graph", dock_scene);
                 ImGui::DockBuilderDockWindow("Inspector", dock_right);
 
                 ImGui::DockBuilderDockWindow("Timeline", dock_bottom);
@@ -293,6 +298,11 @@ namespace MaraGl
         }
         if (m_HierarchyPanel)
             m_HierarchyPanel->SetScene(scene);
+        if (m_AnimationGraphPanel)
+        {
+            m_AnimationGraphPanel->SetScene(scene);
+            m_AnimationGraphPanel->SetHierarchyPanel(m_HierarchyPanel);
+        }
         if (m_TimelinePanel)
         {
             m_TimelinePanel->SetScene(scene);
