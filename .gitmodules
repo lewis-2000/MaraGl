@@ -15,3 +15,6 @@
 [submodule "vendor/assimp"]
 	path = vendor/assimp
 	url = https://github.com/assimp/assimp
+[submodule "vendor/imnodes"]
+	path = vendor/imnodes
+	url = https://github.com/Nelarius/imnodes
