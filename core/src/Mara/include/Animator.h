@@ -34,6 +34,8 @@ namespace MaraGl
         static int FindScaleIndex(const BoneAnimation &boneAnim, float animationTime);
 
         static glm::vec3 InterpolatePositionVec3(const BoneAnimation &boneAnim, float animationTime);
+        static glm::quat InterpolateRotationQuat(const BoneAnimation &boneAnim, float animationTime);
+        static glm::vec3 InterpolateScaleVec3(const BoneAnimation &boneAnim, float animationTime);
         static glm::mat4 InterpolatePosition(const BoneAnimation &boneAnim, float animationTime);
         static glm::mat4 InterpolateRotation(const BoneAnimation &boneAnim, float animationTime);
         static glm::mat4 InterpolateScale(const BoneAnimation &boneAnim, float animationTime);

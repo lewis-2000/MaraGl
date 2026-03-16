@@ -11,6 +11,7 @@
 #include <atomic>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace MaraGl
 {
@@ -30,6 +31,12 @@ namespace MaraGl
         void HandleAnimationInput();
         void ApplyRootMotion(float deltaTime);
         void ApplyThirdPersonCamera(float deltaTime);
+        void ProcessGraphRuntimeEvents();
+        void RefreshAvailableScenes();
+        void LoadCurrentSceneFromList();
+        void LoadNextScene();
+        void LoadPreviousScene();
+        void RenderHud();
         bool WasKeyPressedOnce(int key);
 
         Window m_Window;
@@ -42,6 +49,10 @@ namespace MaraGl
         std::atomic<int> m_PendingModelLoads{0};
         std::atomic<int> m_FailedModelLoads{0};
         bool m_LoadCompleteAnnounced = false;
+        std::vector<std::string> m_AvailableScenes;
+        int m_CurrentSceneIndex = -1;
+        std::string m_CurrentScenePath;
+        bool m_ShowHud = true;
 
         uint32_t m_PlayerEntityID = 0;
         bool m_ThirdPersonMode = true;

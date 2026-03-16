@@ -47,9 +47,9 @@ namespace MaraGl
         void ApplyModernEditorStyle();
 
         // Icon font management
-        ImFont *LoadIconFont(const std::string &fontPath, float fontSize, const char *fontName = "Icons");
-        ImFont *GetIconFont(const char *fontName = "Icons") const;
-        bool HasIconFont(const char *fontName = "Icons") const;
+        ImFont *LoadIconFont(const std::string &fontPath, float fontSize, const char *fontName = "FontAwesome");
+        ImFont *GetIconFont(const char *fontName = "FontAwesome") const;
+        bool HasIconFont(const char *fontName = "FontAwesome") const;
 
     private:
         void init();

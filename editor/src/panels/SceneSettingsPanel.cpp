@@ -2,6 +2,7 @@
 #include "Scene.h"
 #include "AssetLoader.h"
 #include "AnimationComponent.h"
+#include "IconDefs.h"
 #include <imgui.h>
 #include <filesystem>
 #include <iostream>
@@ -22,7 +23,7 @@ namespace MaraGl
 
         ImGui::Spacing();
         ImGui::Separator();
-        ImGui::Text("Animation Playback");
+        ImGui::Text("%s Animation Playback", Icons::Play);
         ImGui::Separator();
 
         if (ImGui::Checkbox("Play Animations##global", &m_AnimationPlaying))
@@ -53,7 +54,7 @@ namespace MaraGl
 
         ImGui::Spacing();
         ImGui::Separator();
-        ImGui::Text("Lighting");
+        ImGui::Text("%s Lighting", Icons::Lightbulb);
 
         // Overcast light toggle and settings
         bool overcastEnabled = m_Scene->IsOvercastEnabled();
@@ -83,7 +84,7 @@ namespace MaraGl
 
         ImGui::Spacing();
         ImGui::Separator();
-        ImGui::Text("Skybox / Environment");
+        ImGui::Text("%s Skybox / Environment", Icons::Sun);
         ImGui::Separator();
 
         // Skybox enabled toggle
@@ -107,7 +108,7 @@ namespace MaraGl
         ImGui::InputText("Skybox Path##env", skyboxPathBuffer, sizeof(skyboxPathBuffer));
 
         ImGui::SameLine();
-        if (ImGui::Button("Load HDRI"))
+        if (ImGui::Button(Icons::Icon(Icons::FileOpen, "Load HDRI").c_str()))
         {
             std::string path(skyboxPathBuffer);
             if (std::filesystem::exists(path))
@@ -153,7 +154,7 @@ namespace MaraGl
         if (ImGui::BeginPopup("SkyboxLoadSuccess"))
         {
             ImGui::Text("Skybox loaded successfully!");
-            if (ImGui::Button("Close##success"))
+            if (ImGui::Button(Icons::Icon(Icons::Check, "Close##success").c_str()))
                 ImGui::CloseCurrentPopup();
             ImGui::EndPopup();
         }
@@ -162,7 +163,7 @@ namespace MaraGl
         if (ImGui::BeginPopup("SkyboxLoadError"))
         {
             ImGui::Text("Failed to load skybox!");
-            if (ImGui::Button("Close##error"))
+            if (ImGui::Button(Icons::Icon(Icons::Times, "Close##error").c_str()))
                 ImGui::CloseCurrentPopup();
             ImGui::EndPopup();
         }
@@ -171,14 +172,14 @@ namespace MaraGl
         if (ImGui::BeginPopup("FileNotFound"))
         {
             ImGui::Text("File not found!");
-            if (ImGui::Button("Close##notfound"))
+            if (ImGui::Button(Icons::Icon(Icons::Times, "Close##notfound").c_str()))
                 ImGui::CloseCurrentPopup();
             ImGui::EndPopup();
         }
 
         ImGui::Spacing();
         ImGui::Separator();
-        ImGui::Text("Camera");
+        ImGui::Text("%s Camera", Icons::Eye);
         ImGui::Separator();
 
         auto camera = m_Scene->GetCameraSettings();
@@ -231,7 +232,7 @@ namespace MaraGl
             m_Scene->SetCameraSettings(camera);
         }
 
-        if (ImGui::Button("Reset Camera##camera"))
+        if (ImGui::Button(Icons::Icon(Icons::Refresh, "Reset Camera##camera").c_str()))
         {
             Scene::CameraSettings defaults;
             m_Scene->SetCameraSettings(defaults);
@@ -239,7 +240,7 @@ namespace MaraGl
 
         ImGui::Spacing();
         ImGui::Separator();
-        ImGui::Text("Scene Management");
+        ImGui::Text("%s Scene Management", Icons::Settings);
         ImGui::Separator();
 
         // Show current working directory as a hint
@@ -255,7 +256,7 @@ namespace MaraGl
         ImGui::TextDisabled("(.json)");
 
         // Save/Load buttons
-        if (ImGui::Button("Save Scene##scene"))
+        if (ImGui::Button(Icons::Icon(Icons::FileSave, "Save Scene##scene").c_str()))
         {
             std::string path(scenePathBuffer);
             if (m_Scene->SaveToFile(path))
@@ -269,7 +270,7 @@ namespace MaraGl
         }
 
         ImGui::SameLine();
-        if (ImGui::Button("Load Scene##scene"))
+        if (ImGui::Button(Icons::Icon(Icons::FileOpen, "Load Scene##scene").c_str()))
         {
             std::string path(scenePathBuffer);
             if (std::filesystem::exists(path))
@@ -317,7 +318,7 @@ namespace MaraGl
         static std::vector<std::pair<std::string, bool>> sceneDirectoryContents;
         static std::string sceneSelectedPath;
 
-        if (ImGui::Button("Browse Scene##scene"))
+        if (ImGui::Button(Icons::Icon(Icons::Search, "Browse Scene##scene").c_str()))
         {
             showSceneBrowser = true;
             try

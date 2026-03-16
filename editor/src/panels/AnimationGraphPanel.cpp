@@ -1,5 +1,6 @@
 #include "AnimationGraphPanel.h"
 #include "Model.h"
+#include "IconDefs.h"
 #include <imnodes.h>
 #include <algorithm>
 #include <filesystem>
@@ -11,11 +12,19 @@
 #include <limits>
 #include <future>
 #include <chrono>
+#include <unordered_map>
 
 namespace MaraGl
 {
     namespace
     {
+        struct ClipCacheEntry
+        {
+            std::vector<Animation> clips;
+        };
+
+        std::unordered_map<std::string, ClipCacheEntry> g_ExternalClipCache;
+
         struct KeyOption
         {
             const char *label;
@@ -317,6 +326,353 @@ namespace MaraGl
             return matchCount;
         }
 
+        const std::vector<Animation> &LoadExternalClipsCached(const std::string &modelPath)
+        {
+            auto it = g_ExternalClipCache.find(modelPath);
+            if (it != g_ExternalClipCache.end())
+                return it->second.clips;
+
+            ClipCacheEntry entry;
+            try
+            {
+                Model sourceModel(modelPath);
+                if (sourceModel.HasAnimations())
+                    entry.clips = sourceModel.LoadAnimations();
+            }
+            catch (const std::exception &)
+            {
+                // Keep editor responsive if one source file fails.
+            }
+
+            auto inserted = g_ExternalClipCache.emplace(modelPath, std::move(entry));
+            return inserted.first->second.clips;
+        }
+
+        int FindOrAppendMatchingClip(AnimationComponent *anim, AnimationComponent::AnimationLibraryEntry &entry)
+        {
+            if (!anim)
+                return -1;
+
+            if (entry.resolvedAnimationIndex >= 0 &&
+                entry.resolvedAnimationIndex < static_cast<int>(anim->animations.size()))
+            {
+                return entry.resolvedAnimationIndex;
+            }
+
+            if (entry.sourceModelPath.empty())
+                return -1;
+
+            const std::vector<Animation> &externalClips = LoadExternalClipsCached(entry.sourceModelPath);
+            if (externalClips.empty() ||
+                entry.sourceClipIndex < 0 ||
+                entry.sourceClipIndex >= static_cast<int>(externalClips.size()))
+            {
+                return -1;
+            }
+
+            const Animation &targetClip = externalClips[static_cast<size_t>(entry.sourceClipIndex)];
+            for (size_t i = 0; i < anim->animations.size(); ++i)
+            {
+                const Animation &existing = anim->animations[i];
+                if (existing.name == targetClip.name &&
+                    std::abs(existing.duration - targetClip.duration) < 0.0001f &&
+                    std::abs(existing.ticksPerSecond - targetClip.ticksPerSecond) < 0.0001f)
+                {
+                    entry.resolvedAnimationIndex = static_cast<int>(i);
+                    return entry.resolvedAnimationIndex;
+                }
+            }
+
+            anim->animations.push_back(targetClip);
+            entry.resolvedAnimationIndex = static_cast<int>(anim->animations.size() - 1);
+            return entry.resolvedAnimationIndex;
+        }
+
+        void ResolveStateRuntimeClip(AnimationComponent *anim, int stateIndex)
+        {
+            if (!anim || stateIndex < 0 || stateIndex >= static_cast<int>(anim->graphStates.size()))
+                return;
+
+            auto &state = anim->graphStates[static_cast<size_t>(stateIndex)];
+            if (state.libraryClip < 0 || state.libraryClip >= static_cast<int>(anim->animationLibrary.size()))
+                return;
+
+            auto &entry = anim->animationLibrary[static_cast<size_t>(state.libraryClip)];
+            const int resolvedIndex = FindOrAppendMatchingClip(anim, entry);
+            if (resolvedIndex < 0 || resolvedIndex >= static_cast<int>(anim->animations.size()))
+                return;
+
+            state.modelPath = entry.sourceModelPath;
+            state.clipIndex = entry.sourceClipIndex;
+            state.durationSeconds = entry.durationSeconds;
+            state.rootTranslationDelta = entry.rootTranslationDelta;
+            state.rootRotationDeltaEuler = entry.rootRotationDeltaEuler;
+            state.rootScaleDelta = entry.rootScaleDelta;
+
+            if (anim->activeState == stateIndex)
+                anim->currentAnimation = resolvedIndex;
+        }
+
+        void RebuildResolvedRuntimeClips(AnimationComponent *anim)
+        {
+            if (!anim)
+                return;
+
+            anim->animations.clear();
+            for (auto &entry : anim->animationLibrary)
+                entry.resolvedAnimationIndex = -1;
+
+            for (size_t i = 0; i < anim->graphStates.size(); ++i)
+                ResolveStateRuntimeClip(anim, static_cast<int>(i));
+
+            if (anim->animations.empty())
+            {
+                anim->currentAnimation = 0;
+                anim->playing = false;
+                anim->currentTime = 0.0f;
+                return;
+            }
+
+            anim->currentAnimation = std::clamp(anim->currentAnimation, 0, static_cast<int>(anim->animations.size()) - 1);
+        }
+
+        bool IsActionStateName(const std::string &name)
+        {
+            const std::string lower = ToLowerAscii(name);
+            return lower.find("attack") != std::string::npos ||
+                   lower.find("jump") != std::string::npos ||
+                   lower.find("hit") != std::string::npos ||
+                   lower.find("dodge") != std::string::npos ||
+                   lower.find("roll") != std::string::npos ||
+                   lower.find("punch") != std::string::npos ||
+                   lower.find("kick") != std::string::npos ||
+                   lower.find("shoot") != std::string::npos ||
+                   lower.find("cast") != std::string::npos ||
+                   lower.find("reload") != std::string::npos ||
+                   lower.find("emote") != std::string::npos;
+        }
+
+        int FindContinueStateIndex(const AnimationComponent *anim)
+        {
+            if (!anim || anim->graphStates.empty())
+                return -1;
+
+            for (size_t i = 0; i < anim->graphStates.size(); ++i)
+            {
+                const std::string lower = ToLowerAscii(anim->graphStates[i].name);
+                if (lower.find("idle") != std::string::npos)
+                    return static_cast<int>(i);
+            }
+
+            for (size_t i = 0; i < anim->graphStates.size(); ++i)
+            {
+                const std::string lower = ToLowerAscii(anim->graphStates[i].name);
+                if (lower.find("locomotion") != std::string::npos)
+                    return static_cast<int>(i);
+            }
+
+            return std::clamp(anim->activeState, 0, static_cast<int>(anim->graphStates.size()) - 1);
+        }
+
+        int ApplyRecommendedOneShotSetup(AnimationComponent *anim, int continueStateIndex)
+        {
+            if (!anim || continueStateIndex < 0 || continueStateIndex >= static_cast<int>(anim->graphStates.size()))
+                return 0;
+
+            int configuredCount = 0;
+            anim->graphStates[static_cast<size_t>(continueStateIndex)].loop = true;
+
+            for (size_t i = 0; i < anim->graphStates.size(); ++i)
+            {
+                if (static_cast<int>(i) == continueStateIndex)
+                    continue;
+
+                auto &state = anim->graphStates[i];
+                if (!IsActionStateName(state.name))
+                    continue;
+
+                state.loop = false;
+                const std::string completeTrigger = "OnComplete:" + state.name;
+
+                bool found = false;
+                for (auto &transition : anim->graphTransitions)
+                {
+                    if (transition.fromState == static_cast<int>(i) && transition.trigger == completeTrigger)
+                    {
+                        transition.toState = continueStateIndex;
+                        transition.hasExitTime = false;
+                        transition.exitTimeNormalized = 1.0f;
+                        transition.blendDuration = 0.12f;
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    AnimationComponent::GraphTransition transition;
+                    transition.fromState = static_cast<int>(i);
+                    transition.toState = continueStateIndex;
+                    transition.trigger = completeTrigger;
+                    transition.hasExitTime = false;
+                    transition.exitTimeNormalized = 1.0f;
+                    transition.blendDuration = 0.12f;
+                    anim->graphTransitions.push_back(transition);
+                }
+
+                ++configuredCount;
+            }
+
+            return configuredCount;
+        }
+
+        int FindTransformFilterIndex(const AnimationComponent::GraphState &state, const std::string &boneName)
+        {
+            const std::string target = ToLowerAscii(boneName);
+            for (size_t i = 0; i < state.transformFilters.size(); ++i)
+            {
+                if (ToLowerAscii(state.transformFilters[i].boneName) == target)
+                    return static_cast<int>(i);
+            }
+            return -1;
+        }
+
+        void UpsertTransformFilter(AnimationComponent::GraphState &state,
+                                   const std::string &boneName,
+                                   bool lockPosX,
+                                   bool lockPosY,
+                                   bool lockPosZ,
+                                   bool lockRotX,
+                                   bool lockRotY,
+                                   bool lockRotZ,
+                                   bool lockScaleX,
+                                   bool lockScaleY,
+                                   bool lockScaleZ)
+        {
+            if (boneName.empty())
+                return;
+
+            const int existingIndex = FindTransformFilterIndex(state, boneName);
+            AnimationComponent::GraphState::TransformFilterRule rule;
+            rule.boneName = boneName;
+            rule.lockPosX = lockPosX;
+            rule.lockPosY = lockPosY;
+            rule.lockPosZ = lockPosZ;
+            rule.posWeightX = 1.0f;
+            rule.posWeightY = 1.0f;
+            rule.posWeightZ = 1.0f;
+            rule.lockRotX = lockRotX;
+            rule.lockRotY = lockRotY;
+            rule.lockRotZ = lockRotZ;
+            rule.rotWeightX = 1.0f;
+            rule.rotWeightY = 1.0f;
+            rule.rotWeightZ = 1.0f;
+            rule.lockScaleX = lockScaleX;
+            rule.lockScaleY = lockScaleY;
+            rule.lockScaleZ = lockScaleZ;
+            rule.scaleWeightX = 1.0f;
+            rule.scaleWeightY = 1.0f;
+            rule.scaleWeightZ = 1.0f;
+
+            if (existingIndex >= 0)
+                state.transformFilters[static_cast<size_t>(existingIndex)] = rule;
+            else
+                state.transformFilters.push_back(std::move(rule));
+        }
+
+        void UpsertTransformFilterWeighted(AnimationComponent::GraphState &state,
+                                           const std::string &boneName,
+                                           bool lockPosX,
+                                           bool lockPosY,
+                                           bool lockPosZ,
+                                           float posWeightX,
+                                           float posWeightY,
+                                           float posWeightZ,
+                                           bool lockRotX,
+                                           bool lockRotY,
+                                           bool lockRotZ,
+                                           float rotWeightX,
+                                           float rotWeightY,
+                                           float rotWeightZ,
+                                           bool lockScaleX,
+                                           bool lockScaleY,
+                                           bool lockScaleZ,
+                                           float scaleWeightX,
+                                           float scaleWeightY,
+                                           float scaleWeightZ)
+        {
+            const int existingIndex = FindTransformFilterIndex(state, boneName);
+            AnimationComponent::GraphState::TransformFilterRule rule;
+            rule.boneName = boneName;
+            rule.lockPosX = lockPosX;
+            rule.lockPosY = lockPosY;
+            rule.lockPosZ = lockPosZ;
+            rule.posWeightX = std::clamp(posWeightX, 0.0f, 1.0f);
+            rule.posWeightY = std::clamp(posWeightY, 0.0f, 1.0f);
+            rule.posWeightZ = std::clamp(posWeightZ, 0.0f, 1.0f);
+            rule.lockRotX = lockRotX;
+            rule.lockRotY = lockRotY;
+            rule.lockRotZ = lockRotZ;
+            rule.rotWeightX = std::clamp(rotWeightX, 0.0f, 1.0f);
+            rule.rotWeightY = std::clamp(rotWeightY, 0.0f, 1.0f);
+            rule.rotWeightZ = std::clamp(rotWeightZ, 0.0f, 1.0f);
+            rule.lockScaleX = lockScaleX;
+            rule.lockScaleY = lockScaleY;
+            rule.lockScaleZ = lockScaleZ;
+            rule.scaleWeightX = std::clamp(scaleWeightX, 0.0f, 1.0f);
+            rule.scaleWeightY = std::clamp(scaleWeightY, 0.0f, 1.0f);
+            rule.scaleWeightZ = std::clamp(scaleWeightZ, 0.0f, 1.0f);
+
+            if (existingIndex >= 0)
+                state.transformFilters[static_cast<size_t>(existingIndex)] = rule;
+            else
+                state.transformFilters.push_back(std::move(rule));
+        }
+
+        void ApplyTransformPresetRootCleanup(AnimationComponent::GraphState &state)
+        {
+            UpsertTransformFilterWeighted(state, "Root*",
+                                          false, true, false, 0.0f, 1.0f, 0.0f,
+                                          false, false, false, 0.0f, 0.0f, 0.0f,
+                                          false, false, false, 0.0f, 0.0f, 0.0f);
+            UpsertTransformFilterWeighted(state, "Hips*",
+                                          false, true, false, 0.0f, 1.0f, 0.0f,
+                                          false, false, false, 0.0f, 0.0f, 0.0f,
+                                          false, false, false, 0.0f, 0.0f, 0.0f);
+            UpsertTransformFilterWeighted(state, "Pelvis*",
+                                          false, true, false, 0.0f, 1.0f, 0.0f,
+                                          false, false, false, 0.0f, 0.0f, 0.0f,
+                                          false, false, false, 0.0f, 0.0f, 0.0f);
+        }
+
+        void ApplyTransformPresetPelvisStabilizer(AnimationComponent::GraphState &state)
+        {
+            UpsertTransformFilterWeighted(state, "Hips*",
+                                          false, true, false, 0.0f, 1.0f, 0.0f,
+                                          true, false, true, 0.35f, 0.0f, 0.35f,
+                                          false, false, false, 0.0f, 0.0f, 0.0f);
+            UpsertTransformFilterWeighted(state, "Pelvis*",
+                                          false, true, false, 0.0f, 0.9f, 0.0f,
+                                          true, false, true, 0.30f, 0.0f, 0.30f,
+                                          false, false, false, 0.0f, 0.0f, 0.0f);
+        }
+
+        void ApplyTransformPresetSoftUpperBody(AnimationComponent::GraphState &state)
+        {
+            UpsertTransformFilterWeighted(state, "Spine*",
+                                          false, false, false, 0.0f, 0.0f, 0.0f,
+                                          true, false, true, 0.25f, 0.0f, 0.25f,
+                                          false, false, false, 0.0f, 0.0f, 0.0f);
+            UpsertTransformFilterWeighted(state, "Chest*",
+                                          false, false, false, 0.0f, 0.0f, 0.0f,
+                                          true, false, true, 0.30f, 0.0f, 0.30f,
+                                          false, false, false, 0.0f, 0.0f, 0.0f);
+            UpsertTransformFilterWeighted(state, "Neck*",
+                                          false, false, false, 0.0f, 0.0f, 0.0f,
+                                          true, true, true, 0.18f, 0.12f, 0.18f,
+                                          false, false, false, 0.0f, 0.0f, 0.0f);
+        }
+
         const char *CompatibilityLabel(const AnimationComponent *anim, const AnimationComponent::AnimationLibraryEntry &entry)
         {
             if (anim->boneInfoMap.empty() || entry.channelBoneNames.empty())
@@ -366,7 +722,7 @@ namespace MaraGl
 
             for (const auto &transition : anim->graphTransitions)
             {
-                if (transition.fromState < 0 || transition.fromState >= stateCount ||
+                if (transition.fromState < -1 || transition.fromState >= stateCount ||
                     transition.toState < 0 || transition.toState >= stateCount)
                 {
                     summary.errors++;
@@ -383,7 +739,7 @@ namespace MaraGl
                     const int current = frontier[cursor];
                     for (const auto &transition : anim->graphTransitions)
                     {
-                        if (transition.fromState != current)
+                        if (transition.fromState != current && transition.fromState != -1)
                             continue;
                         if (transition.toState < 0 || transition.toState >= stateCount)
                             continue;
@@ -519,6 +875,9 @@ namespace MaraGl
             {
                 --anim->activeState;
             }
+
+            if (anim->graphEnabled)
+                RebuildResolvedRuntimeClips(anim);
         }
     }
 
@@ -717,11 +1076,23 @@ namespace MaraGl
         for (size_t linkIdx = 0; linkIdx < anim->graphTransitions.size(); ++linkIdx)
         {
             const auto &transition = anim->graphTransitions[linkIdx];
-            if (transition.fromState >= 0 && transition.fromState < static_cast<int>(anim->graphStates.size()) &&
-                transition.toState >= 0 && transition.toState < static_cast<int>(anim->graphStates.size()))
+            if (transition.toState < 0 || transition.toState >= static_cast<int>(anim->graphStates.size()))
+                continue;
+
+            int sourceAttrId = -1;
+            if (transition.fromState == -1)
+            {
+                sourceAttrId = kEntryOutputAttrId;
+            }
+            else if (transition.fromState >= 0 && transition.fromState < static_cast<int>(anim->graphStates.size()))
+            {
+                sourceAttrId = OutputAttrIdFromNodeIndex(static_cast<size_t>(transition.fromState));
+            }
+
+            if (sourceAttrId != -1)
             {
                 ImNodes::Link(LinkIdFromIndex(linkIdx),
-                              OutputAttrIdFromNodeIndex(static_cast<size_t>(transition.fromState)),
+                              sourceAttrId,
                               InputAttrIdFromNodeIndex(static_cast<size_t>(transition.toState)));
             }
         }
@@ -972,7 +1343,7 @@ namespace MaraGl
         ImGui::Separator();
         ImGui::InputTextWithHint("##libraryFilter", "Filter clips...", m_LibraryFilter, sizeof(m_LibraryFilter));
 
-        if (ImGui::Button("Rescan##toolbar"))
+        if (ImGui::Button(Icons::Icon(Icons::Refresh, "Rescan##toolbar").c_str()))
             RefreshAnimationFiles();
 
         if (m_ImportInProgress)
@@ -1001,10 +1372,10 @@ namespace MaraGl
             }
 
             ImGui::BeginDisabled(m_ImportInProgress);
-            if (ImGui::Button("Import Selected Source"))
+            if (ImGui::Button(Icons::Icon(Icons::FileImport, "Import Selected Source").c_str()))
                 StartLibraryImport({m_AnimationFiles[static_cast<size_t>(m_SelectedImportFile)]}, m_LastEntityId);
             ImGui::SameLine();
-            if (ImGui::Button("Import All Sources"))
+            if (ImGui::Button(Icons::Icon(Icons::FileImport, "Import All Sources").c_str()))
                 StartLibraryImport(m_AnimationFiles, m_LastEntityId);
             ImGui::EndDisabled();
         }
@@ -1092,10 +1463,21 @@ namespace MaraGl
             auto &state = anim->graphStates[static_cast<size_t>(m_SelectedStateIndex)];
             ImGui::Text("State %d", m_SelectedStateIndex);
 
+            const std::string previousStateName = state.name;
             char stateName[128] = {};
             std::strncpy(stateName, state.name.c_str(), sizeof(stateName) - 1);
             if (ImGui::InputText("Name", stateName, sizeof(stateName)))
+            {
                 state.name = stateName;
+                // Keep auto-complete transitions bound when state names change.
+                const std::string oldTrigger = "OnComplete:" + previousStateName;
+                const std::string newTrigger = "OnComplete:" + state.name;
+                for (auto &transition : anim->graphTransitions)
+                {
+                    if (transition.fromState == m_SelectedStateIndex && transition.trigger == oldTrigger)
+                        transition.trigger = newTrigger;
+                }
+            }
 
             const auto *selectedLibraryEntry = GetLibraryEntry(anim, state.libraryClip);
             const std::string clipLabel = selectedLibraryEntry ? selectedLibraryEntry->displayName : std::string("No clip");
@@ -1115,6 +1497,10 @@ namespace MaraGl
                         state.rootTranslationDelta = entry.rootTranslationDelta;
                         state.rootRotationDeltaEuler = entry.rootRotationDeltaEuler;
                         state.rootScaleDelta = entry.rootScaleDelta;
+                        if (anim->graphEnabled)
+                            RebuildResolvedRuntimeClips(anim);
+                        else
+                            ResolveStateRuntimeClip(anim, m_SelectedStateIndex);
                     }
                     if (selected)
                         ImGui::SetItemDefaultFocus();
@@ -1123,7 +1509,189 @@ namespace MaraGl
             }
 
             ImGui::Checkbox("Loop", &state.loop);
+            bool playOnce = !state.loop;
+            if (ImGui::Checkbox("Play Once", &playOnce))
+                state.loop = !playOnce;
             ImGui::Text("Duration %.2fs", state.durationSeconds);
+
+            const std::string onCompleteTrigger = "OnComplete:" + state.name;
+            int onCompleteTransitionIndex = -1;
+            for (size_t i = 0; i < anim->graphTransitions.size(); ++i)
+            {
+                const auto &transition = anim->graphTransitions[i];
+                if (transition.fromState == m_SelectedStateIndex && transition.trigger == onCompleteTrigger)
+                {
+                    onCompleteTransitionIndex = static_cast<int>(i);
+                    break;
+                }
+            }
+
+            bool autoTransitionOnComplete = (onCompleteTransitionIndex != -1);
+            if (ImGui::Checkbox("Auto Transition On Complete", &autoTransitionOnComplete))
+            {
+                if (autoTransitionOnComplete)
+                {
+                    int fallbackTarget = -1;
+                    for (int i = 0; i < static_cast<int>(anim->graphStates.size()); ++i)
+                    {
+                        if (i != m_SelectedStateIndex)
+                        {
+                            fallbackTarget = i;
+                            break;
+                        }
+                    }
+
+                    if (fallbackTarget != -1)
+                    {
+                        AnimationComponent::GraphTransition transition;
+                        transition.fromState = m_SelectedStateIndex;
+                        transition.toState = fallbackTarget;
+                        transition.trigger = onCompleteTrigger;
+                        transition.hasExitTime = false;
+                        transition.exitTimeNormalized = 1.0f;
+                        transition.blendDuration = 0.1f;
+                        anim->graphTransitions.push_back(transition);
+                        onCompleteTransitionIndex = static_cast<int>(anim->graphTransitions.size()) - 1;
+                    }
+                }
+                else if (onCompleteTransitionIndex >= 0 && onCompleteTransitionIndex < static_cast<int>(anim->graphTransitions.size()))
+                {
+                    anim->graphTransitions.erase(anim->graphTransitions.begin() + onCompleteTransitionIndex);
+                    onCompleteTransitionIndex = -1;
+                }
+            }
+
+            if (onCompleteTransitionIndex >= 0 && onCompleteTransitionIndex < static_cast<int>(anim->graphTransitions.size()))
+            {
+                auto &completeTransition = anim->graphTransitions[static_cast<size_t>(onCompleteTransitionIndex)];
+                int completeTargetState = completeTransition.toState;
+
+                const char *targetLabel = "None";
+                if (completeTargetState >= 0 && completeTargetState < static_cast<int>(anim->graphStates.size()))
+                    targetLabel = anim->graphStates[static_cast<size_t>(completeTargetState)].name.c_str();
+
+                if (ImGui::BeginCombo("On Complete Target", targetLabel))
+                {
+                    for (int i = 0; i < static_cast<int>(anim->graphStates.size()); ++i)
+                    {
+                        if (i == m_SelectedStateIndex)
+                            continue;
+
+                        const bool selected = (i == completeTargetState);
+                        if (ImGui::Selectable(anim->graphStates[static_cast<size_t>(i)].name.c_str(), selected))
+                            completeTransition.toState = i;
+                        if (selected)
+                            ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::EndCombo();
+                }
+            }
+
+            if (!state.loop && onCompleteTransitionIndex == -1)
+                ImGui::TextDisabled("Tip: enable 'Auto Transition On Complete' to return to an idle/looping state.");
+            if (state.loop && onCompleteTransitionIndex != -1)
+                ImGui::TextDisabled("Note: looping states won't emit OnComplete until playback stops.");
+
+            ImGui::Separator();
+            ImGui::TextUnformatted("Transform Filters (Bind Pose Blend)");
+            ImGui::TextDisabled("Bone accepts exact names or glob patterns like Hips*, Spine?, *Arm.");
+            ImGui::Checkbox("Preview Without Filters", &state.previewDisableTransformFilters);
+            if (state.previewDisableTransformFilters)
+                ImGui::TextDisabled("Active state will temporarily bypass transform filters for live comparison.");
+
+            if (ImGui::Button(Icons::Icon(Icons::Settings, "Preset: Root Cleanup").c_str()))
+                ApplyTransformPresetRootCleanup(state);
+            ImGui::SameLine();
+            if (ImGui::Button(Icons::Icon(Icons::Settings, "Preset: Pelvis Stabilizer").c_str()))
+                ApplyTransformPresetPelvisStabilizer(state);
+            ImGui::SameLine();
+            if (ImGui::Button(Icons::Icon(Icons::Settings, "Preset: Soft Upper Body").c_str()))
+                ApplyTransformPresetSoftUpperBody(state);
+
+            if (ImGui::Button(Icons::Icon(Icons::Plus, "Add Filter Rule").c_str()))
+            {
+                AnimationComponent::GraphState::TransformFilterRule rule;
+                rule.boneName = "Hips";
+                state.transformFilters.push_back(std::move(rule));
+            }
+            ImGui::SameLine();
+            if (ImGui::Button(Icons::Icon(Icons::Delete, "Clear Filters").c_str()))
+                state.transformFilters.clear();
+
+            for (size_t i = 0; i < state.transformFilters.size(); ++i)
+            {
+                auto &filter = state.transformFilters[i];
+                ImGui::PushID(static_cast<int>(9000 + i));
+
+                char boneNameBuf[128] = {};
+                std::strncpy(boneNameBuf, filter.boneName.c_str(), sizeof(boneNameBuf) - 1);
+                if (ImGui::InputText("Bone", boneNameBuf, sizeof(boneNameBuf)))
+                    filter.boneName = boneNameBuf;
+
+                auto drawWeightedAxisControls = [](const char *label,
+                                                   const char *idPrefix,
+                                                   bool &lockX,
+                                                   bool &lockY,
+                                                   bool &lockZ,
+                                                   float &weightX,
+                                                   float &weightY,
+                                                   float &weightZ)
+                {
+                    ImGui::TextDisabled("%s", label);
+                    ImGui::Checkbox((std::string("X##") + idPrefix + "x").c_str(), &lockX);
+                    ImGui::SameLine();
+                    ImGui::BeginDisabled(!lockX);
+                    ImGui::SetNextItemWidth(90.0f);
+                    ImGui::SliderFloat((std::string("##") + idPrefix + "wx").c_str(), &weightX, 0.0f, 1.0f, "%.2f");
+                    ImGui::EndDisabled();
+
+                    ImGui::SameLine();
+                    ImGui::Checkbox((std::string("Y##") + idPrefix + "y").c_str(), &lockY);
+                    ImGui::SameLine();
+                    ImGui::BeginDisabled(!lockY);
+                    ImGui::SetNextItemWidth(90.0f);
+                    ImGui::SliderFloat((std::string("##") + idPrefix + "wy").c_str(), &weightY, 0.0f, 1.0f, "%.2f");
+                    ImGui::EndDisabled();
+
+                    ImGui::SameLine();
+                    ImGui::Checkbox((std::string("Z##") + idPrefix + "z").c_str(), &lockZ);
+                    ImGui::SameLine();
+                    ImGui::BeginDisabled(!lockZ);
+                    ImGui::SetNextItemWidth(90.0f);
+                    ImGui::SliderFloat((std::string("##") + idPrefix + "wz").c_str(), &weightZ, 0.0f, 1.0f, "%.2f");
+                    ImGui::EndDisabled();
+                };
+
+                drawWeightedAxisControls("Position", "pos",
+                                         filter.lockPosX, filter.lockPosY, filter.lockPosZ,
+                                         filter.posWeightX, filter.posWeightY, filter.posWeightZ);
+                drawWeightedAxisControls("Rotation", "rot",
+                                         filter.lockRotX, filter.lockRotY, filter.lockRotZ,
+                                         filter.rotWeightX, filter.rotWeightY, filter.rotWeightZ);
+                drawWeightedAxisControls("Scale", "scl",
+                                         filter.lockScaleX, filter.lockScaleY, filter.lockScaleZ,
+                                         filter.scaleWeightX, filter.scaleWeightY, filter.scaleWeightZ);
+
+                filter.posWeightX = std::clamp(filter.posWeightX, 0.0f, 1.0f);
+                filter.posWeightY = std::clamp(filter.posWeightY, 0.0f, 1.0f);
+                filter.posWeightZ = std::clamp(filter.posWeightZ, 0.0f, 1.0f);
+                filter.rotWeightX = std::clamp(filter.rotWeightX, 0.0f, 1.0f);
+                filter.rotWeightY = std::clamp(filter.rotWeightY, 0.0f, 1.0f);
+                filter.rotWeightZ = std::clamp(filter.rotWeightZ, 0.0f, 1.0f);
+                filter.scaleWeightX = std::clamp(filter.scaleWeightX, 0.0f, 1.0f);
+                filter.scaleWeightY = std::clamp(filter.scaleWeightY, 0.0f, 1.0f);
+                filter.scaleWeightZ = std::clamp(filter.scaleWeightZ, 0.0f, 1.0f);
+
+                if (ImGui::Button(Icons::Icon(Icons::Delete, "Remove Rule").c_str()))
+                {
+                    state.transformFilters.erase(state.transformFilters.begin() + static_cast<long long>(i));
+                    ImGui::PopID();
+                    break;
+                }
+
+                ImGui::Separator();
+                ImGui::PopID();
+            }
 
             ImGui::Separator();
             ImGui::TextUnformatted("Root Motion");
@@ -1135,7 +1703,7 @@ namespace MaraGl
             ImGui::EndDisabled();
 
             ImGui::BeginDisabled(selectedLibraryEntry == nullptr);
-            if (ImGui::Button("Reset Root Motion To Clip Defaults"))
+            if (ImGui::Button(Icons::Icon(Icons::Refresh, "Reset Root Motion To Clip Defaults").c_str()))
             {
                 state.durationSeconds = selectedLibraryEntry->durationSeconds;
                 state.rootTranslationDelta = selectedLibraryEntry->rootTranslationDelta;
@@ -1157,22 +1725,65 @@ namespace MaraGl
                                     static_cast<int>(selectedLibraryEntry->channelBoneNames.size()));
                 ImGui::TextDisabled("Source: %s", selectedLibraryEntry->sourceModelPath.c_str());
             }
-            if (ImGui::Button("Set As Entry"))
+            if (ImGui::Button(Icons::Icon(Icons::Check, "Set As Entry").c_str()))
+            {
                 anim->activeState = m_SelectedStateIndex;
+                if (anim->graphEnabled)
+                    RebuildResolvedRuntimeClips(anim);
+                else
+                    ResolveStateRuntimeClip(anim, m_SelectedStateIndex);
+            }
+            ImGui::SameLine();
+            if (ImGui::Button(Icons::Icon(Icons::Eye, "Preview State Now").c_str()))
+            {
+                anim->activeState = m_SelectedStateIndex;
+                if (anim->graphEnabled)
+                    RebuildResolvedRuntimeClips(anim);
+                else
+                    ResolveStateRuntimeClip(anim, m_SelectedStateIndex);
+                anim->currentTime = 0.0f;
+                anim->playing = false;
+                anim->looping = state.loop;
+            }
+
+            if (anim->activeState == m_SelectedStateIndex)
+                ImGui::TextDisabled("This state is active. Filter changes should update immediately.");
+            else
+                ImGui::TextDisabled("Filters only affect the active state. Use 'Preview State Now' to inspect this state.");
         }
         else if (m_SelectedTransitionIndex >= 0 && m_SelectedTransitionIndex < static_cast<int>(anim->graphTransitions.size()))
         {
             auto &transition = anim->graphTransitions[static_cast<size_t>(m_SelectedTransitionIndex)];
             ImGui::Text("Transition %d", m_SelectedTransitionIndex);
-            ImGui::Text("From %d", transition.fromState);
+            std::string fromLabel = (transition.fromState == -1) ? std::string("Any State") : std::to_string(transition.fromState);
+            ImGui::Text("From %s", fromLabel.c_str());
             ImGui::Text("To %d", transition.toState);
+
+            bool anyState = (transition.fromState == -1);
+            if (ImGui::Checkbox("From Any State", &anyState))
+                transition.fromState = anyState
+                                           ? -1
+                                           : (anim->graphStates.empty() ? 0 : std::clamp(anim->activeState, 0, static_cast<int>(anim->graphStates.size()) - 1));
 
             char transitionTrigger[128] = {};
             std::strncpy(transitionTrigger, transition.trigger.c_str(), sizeof(transitionTrigger) - 1);
             if (ImGui::InputText("Trigger", transitionTrigger, sizeof(transitionTrigger)))
                 transition.trigger = transitionTrigger;
 
-            if (ImGui::Button("Add Input Binding For Trigger"))
+            ImGui::Checkbox("Has Exit Time", &transition.hasExitTime);
+            if (transition.hasExitTime)
+                ImGui::SliderFloat("Exit Time (normalized)", &transition.exitTimeNormalized, 0.0f, 1.0f, "%.2f");
+            ImGui::SliderFloat("Blend Duration (s)", &transition.blendDuration, 0.0f, 1.0f, "%.2f");
+
+            transition.exitTimeNormalized = std::clamp(transition.exitTimeNormalized, 0.0f, 1.0f);
+            transition.blendDuration = std::max(0.0f, transition.blendDuration);
+
+            if (transition.hasExitTime && transition.trigger.empty())
+                ImGui::TextDisabled("Auto transition: fires when active clip reaches exit time.");
+            if (transition.hasExitTime && !transition.trigger.empty())
+                ImGui::TextDisabled("Exit-time trigger: trigger still required; exit time gate is active.");
+
+            if (ImGui::Button(Icons::Icon(Icons::Plus, "Add Input Binding For Trigger").c_str()))
             {
                 bool alreadyBound = false;
                 for (const auto &binding : anim->inputBindings)
@@ -1196,12 +1807,21 @@ namespace MaraGl
         else
         {
             const GraphValidationSummary summary = ValidateGraph(anim);
+            static int s_LastRecommendedSetupCount = -1;
             ImGui::TextUnformatted("Graph");
             ImGui::Checkbox("Graph Enabled", &anim->graphEnabled);
             ImGui::Text("Entry State %d", anim->activeState);
             ImGui::Text("Library Clips %d", static_cast<int>(anim->animationLibrary.size()));
             ImGui::Text("States %d", static_cast<int>(anim->graphStates.size()));
             ImGui::Text("Transitions %d", static_cast<int>(anim->graphTransitions.size()));
+            if (ImGui::Button(Icons::Icon(Icons::Check, "Apply Recommended One-Shot Setup").c_str()))
+            {
+                const int continueStateIndex = FindContinueStateIndex(anim);
+                s_LastRecommendedSetupCount = ApplyRecommendedOneShotSetup(anim, continueStateIndex);
+            }
+            if (s_LastRecommendedSetupCount >= 0)
+                ImGui::TextDisabled("Configured %d action state(s) to auto-return on completion.", s_LastRecommendedSetupCount);
+
             ImGui::Separator();
             ImGui::Text("Validation");
             ImGui::TextColored(summary.errors > 0 ? ImVec4(0.88f, 0.32f, 0.32f, 1.0f) : ImVec4(0.55f, 0.55f, 0.60f, 1.0f),
@@ -1211,7 +1831,7 @@ namespace MaraGl
 
             ImGui::Separator();
             ImGui::Text("Input Bindings");
-            if (ImGui::Button("Add Input Binding"))
+            if (ImGui::Button(Icons::Icon(Icons::Plus, "Add Input Binding").c_str()))
             {
                 AnimationComponent::InputBinding binding;
                 binding.trigger = "trigger";
@@ -1242,7 +1862,7 @@ namespace MaraGl
                     ImGui::EndCombo();
                 }
 
-                if (ImGui::Button("Remove Binding"))
+                if (ImGui::Button(Icons::Icon(Icons::Delete, "Remove Binding").c_str()))
                 {
                     anim->inputBindings.erase(anim->inputBindings.begin() + static_cast<long long>(i));
                     ImGui::PopID();
@@ -1334,11 +1954,11 @@ namespace MaraGl
         if (auto *name = entity->GetComponent<NameComponent>())
             entityName = name->Name.c_str();
 
-        ImGui::Text("Target Character: %s", entityName);
+        ImGui::Text("%s Target Character: %s", Icons::Cube, entityName);
         ImGui::SameLine();
         ImGui::Checkbox("Graph Enabled", &anim->graphEnabled);
         ImGui::SameLine();
-        if (ImGui::Button("Add State"))
+        if (ImGui::Button(Icons::Icon(Icons::Plus, "Add State").c_str()))
         {
             AnimationComponent::GraphState state = CreateBlankState(anim->graphStates.size());
             anim->graphStates.push_back(state);
@@ -1346,10 +1966,10 @@ namespace MaraGl
             m_RequestRestorePositions = false;
         }
         ImGui::SameLine();
-        if (ImGui::Button("Auto Layout"))
+        if (ImGui::Button(Icons::Icon(Icons::Layer, "Auto Layout").c_str()))
             m_RequestAutoLayout = true;
         ImGui::SameLine();
-        if (ImGui::Button("Focus Active"))
+        if (ImGui::Button(Icons::Icon(Icons::Eye, "Focus Active").c_str()))
         {
             if (anim->activeState >= 0 && anim->activeState < static_cast<int>(anim->graphStates.size()))
                 m_RequestFocusNodeId = NodeIdFromIndex(static_cast<size_t>(anim->activeState));
@@ -1357,7 +1977,7 @@ namespace MaraGl
                 m_RequestFocusNodeId = kEntryNodeId;
         }
         ImGui::SameLine();
-        if (ImGui::Button("Fit View"))
+        if (ImGui::Button(Icons::Icon(Icons::Expand, "Fit View").c_str()))
             m_RequestFitView = true;
         ImGui::SameLine();
         ImGui::SetNextItemWidth(180.0f);

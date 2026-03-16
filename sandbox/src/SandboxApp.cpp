@@ -1,4 +1,5 @@
 #include "SandboxApp.h"
+#include "ImGuiFontSetup.h"
 #include "NameComponent.h"
 #include "TransformComponent.h"
 #include "MeshComponent.h"
@@ -6,13 +7,18 @@
 #include "Animator.h"
 #include "Model.h"
 #include "SceneSerializer.h"
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <imgui.h>
 #include <sstream>
 #include <iostream>
 #include <cmath>
+#include <set>
 #include <unordered_map>
 #include <algorithm>
+#include <filesystem>
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -26,6 +32,49 @@ namespace MaraGl
             if (!animComp || animComp->animations.empty())
                 return 0;
             return glm::clamp(clipIndex, 0, static_cast<int>(animComp->animations.size()) - 1);
+        }
+
+        const char *KeyToLabel(int key)
+        {
+            switch (key)
+            {
+            case GLFW_KEY_UNKNOWN:
+                return "None";
+            case GLFW_KEY_SPACE:
+                return "Space";
+            case GLFW_KEY_LEFT_SHIFT:
+                return "Left Shift";
+            case GLFW_KEY_RIGHT_SHIFT:
+                return "Right Shift";
+            case GLFW_KEY_LEFT_CONTROL:
+                return "Left Ctrl";
+            case GLFW_KEY_RIGHT_CONTROL:
+                return "Right Ctrl";
+            case GLFW_KEY_ENTER:
+                return "Enter";
+            case GLFW_KEY_TAB:
+                return "Tab";
+            default:
+                break;
+            }
+
+            static thread_local char label[8] = {};
+            if (key >= GLFW_KEY_A && key <= GLFW_KEY_Z)
+            {
+                label[0] = static_cast<char>('A' + (key - GLFW_KEY_A));
+                label[1] = '\0';
+                return label;
+            }
+
+            if (key >= GLFW_KEY_0 && key <= GLFW_KEY_9)
+            {
+                label[0] = static_cast<char>('0' + (key - GLFW_KEY_0));
+                label[1] = '\0';
+                return label;
+            }
+
+            std::snprintf(label, sizeof(label), "%d", key);
+            return label;
         }
 
         // ---- Library-resolution helpers (mirrors AppLayer) ----
@@ -167,46 +216,133 @@ namespace MaraGl
                 return;
 
             auto *meshComp = entity->GetComponent<MeshComponent>();
-            if (!meshComp || !meshComp->ModelPtr || !meshComp->ModelPtr->HasAnimations())
+            if (!meshComp || !meshComp->ModelPtr)
                 return;
 
             AnimationComponent *animComp = entity->GetComponent<AnimationComponent>();
             if (!animComp)
                 animComp = &entity->AddComponent<AnimationComponent>();
 
-            animComp->animations = meshComp->ModelPtr->LoadAnimations();
             animComp->boneInfoMap = meshComp->ModelPtr->GetBoneInfoMap();
 
             const int boneCount = meshComp->ModelPtr->GetBoneCount();
             animComp->boneTransforms.assign(static_cast<size_t>(boneCount), glm::mat4(1.0f));
 
-            if (animComp->animations.empty())
-                return;
-
-            const bool hasGraphState = animComp->graphEnabled && !animComp->graphStates.empty();
-            if (hasGraphState)
+            const bool graphMode = animComp->graphEnabled;
+            const bool hasGraphState = graphMode && !animComp->graphStates.empty();
+            if (graphMode)
             {
+                animComp->animations.clear();
+                for (auto &libraryEntry : animComp->animationLibrary)
+                    libraryEntry.resolvedAnimationIndex = -1;
+
+                if (!hasGraphState)
+                {
+                    animComp->currentAnimation = 0;
+                    animComp->currentTime = 0.0f;
+                    animComp->playbackSpeed = 1.0f;
+                    animComp->playing = false;
+                    animComp->wasPlayingLastFrame = false;
+                    return;
+                }
+
                 animComp->activeState = glm::clamp(animComp->activeState, 0, static_cast<int>(animComp->graphStates.size()) - 1);
                 ResolveStateAnimation(animComp, animComp->activeState);
                 animComp->looping = animComp->graphStates[static_cast<size_t>(animComp->activeState)].loop;
             }
             else
             {
+                animComp->animations = meshComp->ModelPtr->LoadAnimations();
+                if (animComp->animations.empty())
+                {
+                    animComp->currentAnimation = 0;
+                    animComp->currentTime = 0.0f;
+                    animComp->playbackSpeed = 1.0f;
+                    animComp->playing = false;
+                    animComp->wasPlayingLastFrame = false;
+                    return;
+                }
+
                 animComp->currentAnimation = 0;
                 animComp->looping = true;
             }
 
+            if (animComp->animations.empty())
+            {
+                animComp->currentAnimation = 0;
+                animComp->currentTime = 0.0f;
+                animComp->playbackSpeed = 1.0f;
+                animComp->playing = false;
+                animComp->wasPlayingLastFrame = false;
+                return;
+            }
+
+            animComp->currentAnimation = ClampClipIndex(animComp, animComp->currentAnimation);
             animComp->currentTime = 0.0f;
             animComp->playbackSpeed = 1.0f;
             animComp->playing = autoPlay;
+            animComp->wasPlayingLastFrame = animComp->playing;
 
             const aiScene *scene = meshComp->ModelPtr->GetScene();
-            if (scene && scene->mRootNode && (!animComp->graphEnabled || hasGraphState))
+            if (scene && scene->mRootNode)
             {
                 glm::mat4 identity(1.0f);
                 glm::mat4 globalInverseTransform = Animator::GetGlobalInverseTransform(scene);
                 Animator::CalculateBoneTransform(animComp, animComp->animations[static_cast<size_t>(animComp->currentAnimation)], scene->mRootNode, identity, globalInverseTransform);
             }
+        }
+
+        bool ApplyGraphTransition(AnimationComponent *animComp,
+                                  const AnimationComponent::GraphTransition &transition,
+                                  bool autoPlay)
+        {
+            if (!animComp)
+                return false;
+
+            if (transition.toState < 0 || transition.toState >= static_cast<int>(animComp->graphStates.size()))
+                return false;
+
+            animComp->activeState = transition.toState;
+            ResolveStateAnimation(animComp, animComp->activeState);
+            animComp->looping = animComp->graphStates[static_cast<size_t>(animComp->activeState)].loop;
+            animComp->currentTime = 0.0f;
+            animComp->playing = autoPlay;
+            (void)transition.blendDuration;
+            return true;
+        }
+
+        bool ApplyGraphExitTransition(Entity *entity, bool autoPlay)
+        {
+            if (!entity)
+                return false;
+
+            auto *animComp = entity->GetComponent<AnimationComponent>();
+            if (!animComp || !animComp->graphEnabled || animComp->graphStates.empty())
+                return false;
+
+            if (animComp->currentAnimation < 0 || animComp->currentAnimation >= static_cast<int>(animComp->animations.size()))
+                return false;
+
+            const Animation &currentAnim = animComp->animations[static_cast<size_t>(animComp->currentAnimation)];
+            if (currentAnim.duration <= 0.0001f)
+                return false;
+
+            const float normalizedTime = std::clamp(animComp->currentTime / currentAnim.duration, 0.0f, 1.0f);
+            for (const auto &transition : animComp->graphTransitions)
+            {
+                if (transition.fromState != animComp->activeState && transition.fromState != -1)
+                    continue;
+                if (!transition.hasExitTime || !transition.trigger.empty())
+                    continue;
+
+                const float exitTime = std::clamp(transition.exitTimeNormalized, 0.0f, 1.0f);
+                if (normalizedTime + 0.0001f < exitTime)
+                    continue;
+
+                return ApplyGraphTransition(animComp, transition, autoPlay);
+            }
+
+            return false;
         }
 
         bool ApplyGraphTrigger(Entity *entity, const std::string &trigger, bool autoPlay)
@@ -218,21 +354,28 @@ namespace MaraGl
             if (!animComp || !animComp->graphEnabled || animComp->graphStates.empty())
                 return false;
 
+            float normalizedTime = 0.0f;
+            if (animComp->currentAnimation >= 0 && animComp->currentAnimation < static_cast<int>(animComp->animations.size()))
+            {
+                const Animation &currentAnim = animComp->animations[static_cast<size_t>(animComp->currentAnimation)];
+                if (currentAnim.duration > 0.0001f)
+                    normalizedTime = std::clamp(animComp->currentTime / currentAnim.duration, 0.0f, 1.0f);
+            }
+
             for (const auto &transition : animComp->graphTransitions)
             {
-                if (transition.fromState != animComp->activeState || transition.trigger != trigger)
+                if (transition.fromState != animComp->activeState && transition.fromState != -1)
                     continue;
+                if (transition.trigger != trigger)
+                    continue;
+                if (transition.hasExitTime)
+                {
+                    const float exitTime = std::clamp(transition.exitTimeNormalized, 0.0f, 1.0f);
+                    if (normalizedTime + 0.0001f < exitTime)
+                        continue;
+                }
 
-                if (transition.toState < 0 || transition.toState >= static_cast<int>(animComp->graphStates.size()))
-                    return false;
-
-                animComp->activeState = transition.toState;
-                ResolveStateAnimation(animComp, animComp->activeState);
-                animComp->looping = animComp->graphStates[static_cast<size_t>(animComp->activeState)].loop;
-                animComp->currentTime = 0.0f;
-                animComp->playing = autoPlay;
-
-                return true;
+                return ApplyGraphTransition(animComp, transition, autoPlay);
             }
 
             return false;
@@ -254,12 +397,25 @@ namespace MaraGl
         camera.Pitch = -0.45f;
         m_Scene.SetCameraSettings(camera);
         m_PreviousKeyState.fill(false);
+        RefreshAvailableScenes();
+
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGui::StyleColorsDark();
+        ImGuiIO &io = ImGui::GetIO();
+        io.IniFilename = nullptr;
+        ConfigureDefaultImGuiFonts(io, 20.0f, 20.0f);
+        ImGui_ImplGlfw_InitForOpenGL(m_Window.getWindow(), true);
+        ImGui_ImplOpenGL3_Init("#version 460");
 
         std::cout << "[SandboxApp] Initialized" << std::endl;
     }
 
     SandboxApp::~SandboxApp()
     {
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
     }
 
     void SandboxApp::processEvents()
@@ -276,6 +432,7 @@ namespace MaraGl
 
         // Update scene
         m_Scene.Update(deltaTime);
+        ProcessGraphRuntimeEvents();
 
         // Update camera
         auto &camera = m_Renderer.GetCamera();
@@ -304,6 +461,30 @@ namespace MaraGl
         m_Scene.SetCameraSettings(liveCamera);
     }
 
+    void SandboxApp::ProcessGraphRuntimeEvents()
+    {
+        for (const auto &entity : m_Scene.GetEntities())
+        {
+            auto *animComp = entity->GetComponent<AnimationComponent>();
+            if (!animComp || !animComp->graphEnabled || animComp->graphStates.empty())
+                continue;
+
+            ApplyGraphExitTransition(entity.get(), true);
+
+            const bool completedThisFrame = (!animComp->playing && animComp->wasPlayingLastFrame && !animComp->looping);
+            if (completedThisFrame &&
+                animComp->activeState >= 0 &&
+                animComp->activeState < static_cast<int>(animComp->graphStates.size()))
+            {
+                const auto &state = animComp->graphStates[static_cast<size_t>(animComp->activeState)];
+                const std::string completeTrigger = "OnComplete:" + state.name;
+                ApplyGraphTrigger(entity.get(), completeTrigger, true);
+            }
+
+            animComp->wasPlayingLastFrame = animComp->playing;
+        }
+    }
+
     bool SandboxApp::WasKeyPressedOnce(int key)
     {
         if (key < 0 || key > GLFW_KEY_LAST)
@@ -317,6 +498,28 @@ namespace MaraGl
 
     void SandboxApp::HandleAnimationInput()
     {
+        if (WasKeyPressedOnce(GLFW_KEY_F5))
+        {
+            if (!m_CurrentScenePath.empty())
+                LoadScene(m_CurrentScenePath);
+            return;
+        }
+
+        if (WasKeyPressedOnce(GLFW_KEY_F1))
+            m_ShowHud = !m_ShowHud;
+
+        if (WasKeyPressedOnce(GLFW_KEY_RIGHT_BRACKET))
+        {
+            LoadNextScene();
+            return;
+        }
+
+        if (WasKeyPressedOnce(GLFW_KEY_LEFT_BRACKET))
+        {
+            LoadPreviousScene();
+            return;
+        }
+
         if (WasKeyPressedOnce(GLFW_KEY_T))
             m_ThirdPersonMode = !m_ThirdPersonMode;
 
@@ -461,12 +664,205 @@ namespace MaraGl
         m_Scene.Render(m_Renderer, shader);
         m_Scene.RenderGrid(m_Renderer);
 
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        RenderHud();
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
         glfwSwapBuffers(m_Window.getWindow());
+    }
+
+    void SandboxApp::RenderHud()
+    {
+        if (!m_ShowHud)
+            return;
+
+        std::string queuedScenePath;
+
+        const ImGuiViewport *viewport = ImGui::GetMainViewport();
+        ImGui::SetNextWindowPos(ImVec2(viewport->WorkPos.x + 16.0f, viewport->WorkPos.y + 16.0f), ImGuiCond_Always);
+        ImGui::SetNextWindowBgAlpha(0.72f);
+
+        constexpr ImGuiWindowFlags hudFlags =
+            ImGuiWindowFlags_NoDecoration |
+            ImGuiWindowFlags_AlwaysAutoResize |
+            ImGuiWindowFlags_NoSavedSettings |
+            ImGuiWindowFlags_NoFocusOnAppearing |
+            ImGuiWindowFlags_NoNav;
+
+        if (!ImGui::Begin("Sandbox HUD", nullptr, hudFlags))
+        {
+            ImGui::End();
+            return;
+        }
+
+        const std::string sceneName = m_CurrentScenePath.empty()
+                                          ? std::string("None")
+                                          : std::filesystem::path(m_CurrentScenePath).filename().string();
+        ImGui::Text("Scene: %s", sceneName.c_str());
+        if (!m_AvailableScenes.empty() && m_CurrentSceneIndex >= 0)
+            ImGui::Text("Scene Index: %d / %d", m_CurrentSceneIndex + 1, static_cast<int>(m_AvailableScenes.size()));
+
+        if (!m_AvailableScenes.empty())
+        {
+            const char *currentSceneLabel = sceneName.c_str();
+            if (ImGui::BeginCombo("Scene Picker", currentSceneLabel))
+            {
+                for (size_t i = 0; i < m_AvailableScenes.size(); ++i)
+                {
+                    const bool selected = (static_cast<int>(i) == m_CurrentSceneIndex);
+                    const std::string optionLabel = std::filesystem::path(m_AvailableScenes[i]).filename().string();
+                    if (ImGui::Selectable(optionLabel.c_str(), selected))
+                        queuedScenePath = m_AvailableScenes[i];
+                    if (selected)
+                        ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
+            }
+        }
+
+        Entity *player = m_Scene.FindEntityByID(m_PlayerEntityID);
+        auto *animComp = player ? player->GetComponent<AnimationComponent>() : nullptr;
+        const char *activeStateName = "None";
+        if (animComp && animComp->activeState >= 0 && animComp->activeState < static_cast<int>(animComp->graphStates.size()))
+            activeStateName = animComp->graphStates[static_cast<size_t>(animComp->activeState)].name.c_str();
+
+        ImGui::Separator();
+        ImGui::Text("Active State: %s", activeStateName);
+        ImGui::Text("Playing: %s", (animComp && animComp->playing) ? "Yes" : "No");
+        ImGui::Text("Root Motion: %s", m_UseRootMotion ? "On" : "Off");
+        ImGui::Text("Camera: %s", m_ThirdPersonMode ? "Third Person" : "Free");
+
+        if (player && animComp && animComp->graphEnabled)
+        {
+            std::set<std::string> uniqueTriggers;
+            for (const auto &transition : animComp->graphTransitions)
+            {
+                if (!transition.trigger.empty())
+                    uniqueTriggers.insert(transition.trigger);
+            }
+
+            if (!uniqueTriggers.empty())
+            {
+                ImGui::Separator();
+                ImGui::Text("Graph Triggers");
+                for (const auto &trigger : uniqueTriggers)
+                {
+                    if (ImGui::Button(trigger.c_str()))
+                        ApplyGraphTrigger(player, trigger, true);
+                    if (&trigger != &(*uniqueTriggers.rbegin()))
+                        ImGui::SameLine();
+                }
+            }
+
+            if (!animComp->inputBindings.empty())
+            {
+                ImGui::Separator();
+                ImGui::Text("Input Bindings");
+                for (const auto &binding : animComp->inputBindings)
+                {
+                    const bool pressed = (binding.key >= 0) && Input::IsKeyPressed(binding.key);
+                    ImGui::Text("%s <- %s [%s]",
+                                binding.trigger.c_str(),
+                                KeyToLabel(binding.key),
+                                pressed ? "DOWN" : "up");
+                }
+            }
+        }
+
+        ImGui::Separator();
+        ImGui::TextDisabled("F1 HUD  [ / ] Scene  F5 Reload  T Camera  M Root Motion  P Play  R Reset");
+        ImGui::End();
+
+        if (!queuedScenePath.empty())
+            LoadScene(queuedScenePath);
+    }
+
+    void SandboxApp::RefreshAvailableScenes()
+    {
+        m_AvailableScenes.clear();
+
+        const std::filesystem::path scenesDir("scenes");
+        if (!std::filesystem::exists(scenesDir))
+            return;
+
+        for (const auto &entry : std::filesystem::directory_iterator(scenesDir))
+        {
+            if (!entry.is_regular_file())
+                continue;
+
+            const std::string ext = entry.path().extension().string();
+            if (ext != ".json" && ext != ".JSON")
+                continue;
+
+            m_AvailableScenes.push_back(entry.path().generic_string());
+        }
+
+        std::sort(m_AvailableScenes.begin(), m_AvailableScenes.end());
+
+        if (!m_CurrentScenePath.empty())
+        {
+            auto it = std::find(m_AvailableScenes.begin(), m_AvailableScenes.end(), m_CurrentScenePath);
+            m_CurrentSceneIndex = (it != m_AvailableScenes.end()) ? static_cast<int>(std::distance(m_AvailableScenes.begin(), it)) : -1;
+        }
+
+        if (m_CurrentSceneIndex < 0 && !m_AvailableScenes.empty())
+            m_CurrentSceneIndex = 0;
+    }
+
+    void SandboxApp::LoadCurrentSceneFromList()
+    {
+        RefreshAvailableScenes();
+        if (m_CurrentSceneIndex < 0 || m_CurrentSceneIndex >= static_cast<int>(m_AvailableScenes.size()))
+        {
+            std::cerr << "[SandboxApp] No scenes available in scenes/" << std::endl;
+            return;
+        }
+
+        LoadScene(m_AvailableScenes[static_cast<size_t>(m_CurrentSceneIndex)]);
+    }
+
+    void SandboxApp::LoadNextScene()
+    {
+        RefreshAvailableScenes();
+        if (m_AvailableScenes.empty())
+        {
+            std::cerr << "[SandboxApp] No scenes available in scenes/" << std::endl;
+            return;
+        }
+
+        if (m_CurrentSceneIndex < 0)
+            m_CurrentSceneIndex = 0;
+        else
+            m_CurrentSceneIndex = (m_CurrentSceneIndex + 1) % static_cast<int>(m_AvailableScenes.size());
+
+        LoadCurrentSceneFromList();
+    }
+
+    void SandboxApp::LoadPreviousScene()
+    {
+        RefreshAvailableScenes();
+        if (m_AvailableScenes.empty())
+        {
+            std::cerr << "[SandboxApp] No scenes available in scenes/" << std::endl;
+            return;
+        }
+
+        if (m_CurrentSceneIndex < 0)
+            m_CurrentSceneIndex = 0;
+        else
+            m_CurrentSceneIndex = (m_CurrentSceneIndex - 1 + static_cast<int>(m_AvailableScenes.size())) % static_cast<int>(m_AvailableScenes.size());
+
+        LoadCurrentSceneFromList();
     }
 
     void SandboxApp::LoadScene(const std::string &scenePath)
     {
         std::cout << "[SandboxApp] Loading scene: " << scenePath << std::endl;
+        m_CurrentScenePath = std::filesystem::path(scenePath).generic_string();
+        RefreshAvailableScenes();
         m_PendingModelLoads = 0;
         m_FailedModelLoads = 0;
         m_LoadCompleteAnnounced = false;
@@ -537,7 +933,12 @@ namespace MaraGl
         }
 
         m_SceneLoaded = true;
-        std::cout << "[SandboxApp] Controls: P play/pause, R reset, graph input keys from scene, T toggle third-person camera, M toggle root motion." << std::endl;
+        const std::string sceneName = std::filesystem::path(m_CurrentScenePath).filename().string();
+        std::cout << "[SandboxApp] Controls: F1 HUD, P play/pause, R reset, graph input keys from scene, T toggle third-person camera, M toggle root motion, [ previous scene, ] next scene, F5 reload scene." << std::endl;
+        std::cout << "[SandboxApp] Active scene: " << sceneName;
+        if (!m_AvailableScenes.empty() && m_CurrentSceneIndex >= 0)
+            std::cout << " (" << (m_CurrentSceneIndex + 1) << "/" << m_AvailableScenes.size() << ")";
+        std::cout << std::endl;
         std::cout << "[SandboxApp] Scene loaded. Queued " << queuedModels << " model(s) asynchronously." << std::endl;
     }
 
@@ -546,7 +947,14 @@ namespace MaraGl
         // Load default scene if not already loaded
         if (!m_SceneLoaded)
         {
-            LoadScene("scenes/default_animation_scene.json");
+            RefreshAvailableScenes();
+            const auto defaultIt = std::find(m_AvailableScenes.begin(), m_AvailableScenes.end(), "scenes/default_animation_scene.json");
+            if (defaultIt != m_AvailableScenes.end())
+                m_CurrentSceneIndex = static_cast<int>(std::distance(m_AvailableScenes.begin(), defaultIt));
+            else if (!m_AvailableScenes.empty())
+                m_CurrentSceneIndex = 0;
+
+            LoadCurrentSceneFromList();
         }
 
         while (!glfwWindowShouldClose(m_Window.getWindow()))

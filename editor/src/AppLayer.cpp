@@ -176,48 +176,139 @@ namespace MaraGl
                 return;
 
             auto *meshComp = entity->GetComponent<MeshComponent>();
-            if (!meshComp || !meshComp->ModelPtr || !meshComp->ModelPtr->HasAnimations())
+            if (!meshComp || !meshComp->ModelPtr)
                 return;
 
             AnimationComponent *animComp = entity->GetComponent<AnimationComponent>();
             if (!animComp)
                 animComp = &entity->AddComponent<AnimationComponent>();
 
-            animComp->animations = meshComp->ModelPtr->LoadAnimations();
             animComp->boneInfoMap = meshComp->ModelPtr->GetBoneInfoMap();
 
             const int boneCount = meshComp->ModelPtr->GetBoneCount();
             animComp->boneTransforms.assign(static_cast<size_t>(boneCount), glm::mat4(1.0f));
 
-            if (animComp->animations.empty())
-                return;
+            const bool graphMode = animComp->graphEnabled;
+            const bool hasGraphState = graphMode && !animComp->graphStates.empty();
 
-            const bool hasGraphState = animComp->graphEnabled && !animComp->graphStates.empty();
-            if (hasGraphState)
+            if (graphMode)
             {
+                // Graph mode owns runtime clip selection. Do not keep model-embedded clips.
+                animComp->animations.clear();
+                for (auto &libraryEntry : animComp->animationLibrary)
+                    libraryEntry.resolvedAnimationIndex = -1;
+
+                if (!hasGraphState)
+                {
+                    animComp->currentAnimation = 0;
+                    animComp->currentTime = 0.0f;
+                    animComp->playbackSpeed = 1.0f;
+                    animComp->playing = false;
+                    return;
+                }
+
                 animComp->activeState = std::clamp(animComp->activeState, 0, static_cast<int>(animComp->graphStates.size()) - 1);
                 const auto &state = animComp->graphStates[static_cast<size_t>(animComp->activeState)];
-                animComp->currentAnimation = ClampClipIndex(animComp, state.clipIndex);
+                animComp->currentAnimation = state.clipIndex;
                 animComp->looping = state.loop;
                 ResolveStateAnimation(animComp, animComp->activeState);
             }
             else
             {
+                animComp->animations = meshComp->ModelPtr->LoadAnimations();
+                if (animComp->animations.empty())
+                {
+                    animComp->currentAnimation = 0;
+                    animComp->currentTime = 0.0f;
+                    animComp->playbackSpeed = 1.0f;
+                    animComp->playing = false;
+                    return;
+                }
+
                 animComp->currentAnimation = 0;
                 animComp->looping = true;
             }
 
+            if (animComp->animations.empty())
+            {
+                animComp->currentAnimation = 0;
+                animComp->currentTime = 0.0f;
+                animComp->playbackSpeed = 1.0f;
+                animComp->playing = false;
+                return;
+            }
+
+            animComp->currentAnimation = ClampClipIndex(animComp, animComp->currentAnimation);
             animComp->currentTime = 0.0f;
             animComp->playbackSpeed = 1.0f;
             animComp->playing = autoPlay;
+            animComp->wasPlayingLastFrame = animComp->playing;
 
             const aiScene *scene = meshComp->ModelPtr->GetScene();
-            if (scene && scene->mRootNode && (!animComp->graphEnabled || hasGraphState))
+            if (scene && scene->mRootNode)
             {
                 glm::mat4 identity(1.0f);
                 glm::mat4 globalInverseTransform = Animator::GetGlobalInverseTransform(scene);
                 Animator::CalculateBoneTransform(animComp, animComp->animations[static_cast<size_t>(animComp->currentAnimation)], scene->mRootNode, identity, globalInverseTransform);
             }
+        }
+
+        bool ApplyGraphTransition(AnimationComponent *animComp,
+                                  const AnimationComponent::GraphTransition &transition,
+                                  bool autoPlay)
+        {
+            if (!animComp)
+                return false;
+
+            if (transition.toState < 0 || transition.toState >= static_cast<int>(animComp->graphStates.size()))
+                return false;
+
+            animComp->activeState = transition.toState;
+            auto &targetState = animComp->graphStates[static_cast<size_t>(animComp->activeState)];
+
+            ResolveStateAnimation(animComp, animComp->activeState);
+            animComp->looping = targetState.loop;
+            animComp->currentTime = 0.0f;
+            animComp->playing = autoPlay;
+
+            // Blend is currently stored for authoring/serialization; runtime blend support can be layered next.
+            (void)transition.blendDuration;
+
+            return true;
+        }
+
+        bool ApplyGraphExitTransition(Entity *entity, bool autoPlay)
+        {
+            if (!entity)
+                return false;
+
+            auto *animComp = entity->GetComponent<AnimationComponent>();
+            if (!animComp || !animComp->graphEnabled || animComp->graphStates.empty())
+                return false;
+
+            if (animComp->currentAnimation < 0 || animComp->currentAnimation >= static_cast<int>(animComp->animations.size()))
+                return false;
+
+            const Animation &currentAnim = animComp->animations[static_cast<size_t>(animComp->currentAnimation)];
+            if (currentAnim.duration <= 0.0001f)
+                return false;
+
+            const float normalizedTime = std::clamp(animComp->currentTime / currentAnim.duration, 0.0f, 1.0f);
+            for (const auto &transition : animComp->graphTransitions)
+            {
+                if (transition.fromState != animComp->activeState && transition.fromState != -1)
+                    continue;
+                if (!transition.hasExitTime || !transition.trigger.empty())
+                    continue;
+
+                const float exitTime = std::clamp(transition.exitTimeNormalized, 0.0f, 1.0f);
+                if (normalizedTime + 0.0001f < exitTime)
+                    continue;
+
+                return ApplyGraphTransition(animComp, transition, autoPlay);
+            }
+
+            return false;
         }
 
         bool ApplyGraphTrigger(Entity *entity, const std::string &trigger, bool autoPlay)
@@ -229,23 +320,28 @@ namespace MaraGl
             if (!animComp || !animComp->graphEnabled || animComp->graphStates.empty())
                 return false;
 
+            float normalizedTime = 0.0f;
+            if (animComp->currentAnimation >= 0 && animComp->currentAnimation < static_cast<int>(animComp->animations.size()))
+            {
+                const Animation &currentAnim = animComp->animations[static_cast<size_t>(animComp->currentAnimation)];
+                if (currentAnim.duration > 0.0001f)
+                    normalizedTime = std::clamp(animComp->currentTime / currentAnim.duration, 0.0f, 1.0f);
+            }
+
             for (const auto &transition : animComp->graphTransitions)
             {
-                if (transition.fromState != animComp->activeState || transition.trigger != trigger)
+                if (transition.fromState != animComp->activeState && transition.fromState != -1)
                     continue;
+                if (transition.trigger != trigger)
+                    continue;
+                if (transition.hasExitTime)
+                {
+                    const float exitTime = std::clamp(transition.exitTimeNormalized, 0.0f, 1.0f);
+                    if (normalizedTime + 0.0001f < exitTime)
+                        continue;
+                }
 
-                if (transition.toState < 0 || transition.toState >= static_cast<int>(animComp->graphStates.size()))
-                    return false;
-
-                animComp->activeState = transition.toState;
-                auto &targetState = animComp->graphStates[static_cast<size_t>(animComp->activeState)];
-
-                ResolveStateAnimation(animComp, animComp->activeState);
-                animComp->looping = targetState.loop;
-                animComp->currentTime = 0.0f;
-                animComp->playing = autoPlay;
-
-                return true;
+                return ApplyGraphTransition(animComp, transition, autoPlay);
             }
 
             return false;
@@ -295,6 +391,7 @@ namespace MaraGl
         ApplyRootMotionInGameMode(deltaTime);
 
         m_Scene.Update(deltaTime);
+        ProcessGraphRuntimeEvents();
         m_ImGuiLayer.Update(deltaTime);
 
         auto &camera = m_Renderer.GetCamera();
@@ -542,6 +639,30 @@ namespace MaraGl
             velocity *= (maxRootMotionSpeed / speed);
 
         transform->Position += velocity * (deltaTime * animComp->playbackSpeed);
+    }
+
+    void AppLayer::ProcessGraphRuntimeEvents()
+    {
+        for (const auto &entity : m_Scene.GetEntities())
+        {
+            auto *animComp = entity->GetComponent<AnimationComponent>();
+            if (!animComp || !animComp->graphEnabled || animComp->graphStates.empty())
+                continue;
+
+            ApplyGraphExitTransition(entity.get(), true);
+
+            const bool completedThisFrame = (!animComp->playing && animComp->wasPlayingLastFrame && !animComp->looping);
+            if (completedThisFrame &&
+                animComp->activeState >= 0 &&
+                animComp->activeState < static_cast<int>(animComp->graphStates.size()))
+            {
+                const auto &state = animComp->graphStates[static_cast<size_t>(animComp->activeState)];
+                const std::string completeTrigger = "OnComplete:" + state.name;
+                ApplyGraphTrigger(entity.get(), completeTrigger, true);
+            }
+
+            animComp->wasPlayingLastFrame = animComp->playing;
+        }
     }
 
     void AppLayer::LoadScene(const std::string &scenePath)

@@ -8,6 +8,7 @@
 #include "AnimationComponent.h"
 #include "Animator.h"
 #include "Model.h"
+#include "IconDefs.h"
 #include <memory>
 #include <filesystem>
 #include <algorithm>
@@ -116,7 +117,7 @@ namespace MaraGl
                     static std::vector<std::pair<std::string, bool>> directoryContents;
                     static std::string selectedPath;
 
-                    if (ImGui::Button("Browse Model##mesh"))
+                    if (ImGui::Button(Icons::Icon(Icons::Search, "Browse Model##mesh").c_str()))
                     {
                         showModelBrowser = true;
                         try
@@ -154,7 +155,7 @@ namespace MaraGl
                         ImGui::Text("Current: %s", currentDirectory.c_str());
                         ImGui::Separator();
 
-                        if (ImGui::Button(".. (Parent)##inspector_parent"))
+                        if (ImGui::Button(Icons::Icon(Icons::ChevronLeft, "Parent##inspector_parent").c_str()))
                         {
                             auto parent = std::filesystem::path(currentDirectory).parent_path();
                             if (!parent.empty() && parent.string() != currentDirectory)
@@ -186,7 +187,7 @@ namespace MaraGl
                         {
                             for (const auto &[name, isDir] : directoryContents)
                             {
-                                std::string label = isDir ? "[DIR] " + name : name;
+                                std::string label = isDir ? Icons::Icon(Icons::Folder, name.c_str()) : Icons::Icon(Icons::FileOpen, name.c_str());
                                 bool isSelected = (!isDir && selectedPath == (std::filesystem::path(currentDirectory) / name).string());
                                 if (ImGui::Selectable(label.c_str(), isSelected))
                                 {
@@ -227,7 +228,7 @@ namespace MaraGl
                             ImGui::TextWrapped("Selected: %s", selectedPath.c_str());
                         }
 
-                        if (ImGui::Button("Load Selected##inspector_load", ImVec2(160, 0)))
+                        if (ImGui::Button(Icons::Icon(Icons::Check, "Load Selected##inspector_load").c_str(), ImVec2(160, 0)))
                         {
                             if (!selectedPath.empty() && std::filesystem::exists(selectedPath))
                             {
@@ -246,7 +247,7 @@ namespace MaraGl
                         }
 
                         ImGui::SameLine();
-                        if (ImGui::Button("Cancel##inspector_cancel", ImVec2(120, 0)))
+                        if (ImGui::Button(Icons::Icon(Icons::Times, "Cancel##inspector_cancel").c_str(), ImVec2(120, 0)))
                         {
                             showModelBrowser = false;
                             ImGui::CloseCurrentPopup();
@@ -256,7 +257,7 @@ namespace MaraGl
                     }
 
                     ImGui::SameLine();
-                    if (ImGui::Button("Clear Model##mesh"))
+                    if (ImGui::Button(Icons::Icon(Icons::Delete, "Clear Model##mesh").c_str()))
                     {
                         meshComp->ModelPtr.reset();
                     }
@@ -273,58 +274,67 @@ namespace MaraGl
                 {
                     ImGui::Spacing();
                     ImGui::Separator();
-                    ImGui::Text("Animation Loading");
+                    ImGui::Text("%s Animation Loading", Icons::Film);
 
-                    // Check if entity has a MeshComponent with a model
-                    auto *meshComp = entity->GetComponent<MeshComponent>();
-                    if (meshComp && meshComp->ModelPtr && meshComp->ModelPtr->HasAnimations())
+                    if (animComp->graphEnabled)
                     {
-                        ImGui::Text("Model has %d animation(s)", meshComp->ModelPtr->GetAnimationCount());
-
-                        if (ImGui::Button("Load Animations from Model"))
-                        {
-                            // Load animations from the model
-                            animComp->animations = meshComp->ModelPtr->LoadAnimations();
-                            animComp->boneInfoMap = meshComp->ModelPtr->GetBoneInfoMap();
-
-                            // Initialize bone transforms array with identity matrices
-                            int boneCount = meshComp->ModelPtr->GetBoneCount();
-                            animComp->boneTransforms.clear();
-                            animComp->boneTransforms.resize(boneCount, glm::mat4(1.0f));
-
-                            // Calculate initial bind pose transforms
-                            if (!animComp->animations.empty())
-                            {
-                                animComp->currentAnimation = 0;
-                                animComp->currentTime = 0.0f;
-
-                                // Calculate bone transforms for first frame
-                                const aiScene *scene = meshComp->ModelPtr->GetScene();
-                                if (scene && scene->mRootNode)
-                                {
-                                    glm::mat4 identity(1.0f);
-                                    glm::mat4 globalInverseTransform = Animator::GetGlobalInverseTransform(scene);
-                                    Animator::CalculateBoneTransform(animComp, animComp->animations[0],
-                                                                     scene->mRootNode, identity, globalInverseTransform);
-                                }
-                            }
-
-                            ImGui::OpenPopup("AnimationsLoadSuccess");
-                        }
-
-                        if (ImGui::BeginPopup("AnimationsLoadSuccess"))
-                        {
-                            ImGui::Text("Loaded %d animations!", (int)animComp->animations.size());
-                            ImGui::EndPopup();
-                        }
-                    }
-                    else if (meshComp && meshComp->ModelPtr)
-                    {
-                        ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.0f, 1.0f), "Model has no animations");
+                        ImGui::TextColored(ImVec4(0.3f, 0.8f, 1.0f, 1.0f),
+                                           "Graph mode active: clips are resolved from the animation graph library.");
+                        ImGui::TextWrapped("Model clip import is disabled while graph mode is enabled.");
                     }
                     else
                     {
-                        ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "No model loaded - add MeshComponent first");
+                        // Check if entity has a MeshComponent with a model
+                        auto *meshComp = entity->GetComponent<MeshComponent>();
+                        if (meshComp && meshComp->ModelPtr && meshComp->ModelPtr->HasAnimations())
+                        {
+                            ImGui::Text("Model has %d animation(s)", meshComp->ModelPtr->GetAnimationCount());
+
+                            if (ImGui::Button(Icons::Icon(Icons::FileImport, "Load Animations from Model").c_str()))
+                            {
+                                // Load animations from the model
+                                animComp->animations = meshComp->ModelPtr->LoadAnimations();
+                                animComp->boneInfoMap = meshComp->ModelPtr->GetBoneInfoMap();
+
+                                // Initialize bone transforms array with identity matrices
+                                int boneCount = meshComp->ModelPtr->GetBoneCount();
+                                animComp->boneTransforms.clear();
+                                animComp->boneTransforms.resize(boneCount, glm::mat4(1.0f));
+
+                                // Calculate initial bind pose transforms
+                                if (!animComp->animations.empty())
+                                {
+                                    animComp->currentAnimation = 0;
+                                    animComp->currentTime = 0.0f;
+
+                                    // Calculate bone transforms for first frame
+                                    const aiScene *scene = meshComp->ModelPtr->GetScene();
+                                    if (scene && scene->mRootNode)
+                                    {
+                                        glm::mat4 identity(1.0f);
+                                        glm::mat4 globalInverseTransform = Animator::GetGlobalInverseTransform(scene);
+                                        Animator::CalculateBoneTransform(animComp, animComp->animations[0],
+                                                                         scene->mRootNode, identity, globalInverseTransform);
+                                    }
+                                }
+
+                                ImGui::OpenPopup("AnimationsLoadSuccess");
+                            }
+
+                            if (ImGui::BeginPopup("AnimationsLoadSuccess"))
+                            {
+                                ImGui::Text("Loaded %d animations!", (int)animComp->animations.size());
+                                ImGui::EndPopup();
+                            }
+                        }
+                        else if (meshComp && meshComp->ModelPtr)
+                        {
+                            ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.0f, 1.0f), "Model has no animations");
+                        }
+                        else
+                        {
+                            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "No model loaded - add MeshComponent first");
+                        }
                     }
                 }
             }
@@ -346,7 +356,7 @@ namespace MaraGl
         ImGui::Separator();
 
         // Add component dropdown
-        if (ImGui::Button("Add Component"))
+        if (ImGui::Button(Icons::Icon(Icons::Plus, "Add Component").c_str()))
         {
             ImGui::OpenPopup("AddComponentMenu");
         }

@@ -37,6 +37,7 @@ namespace MaraGl
         void HandleGraphInput(bool sceneFocused);
         void UpdateCameraBehindModel();
         void ApplyRootMotionInGameMode(float deltaTime);
+        void ProcessGraphRuntimeEvents();
         bool WasKeyPressedOnce(int key);
         void QueueGraphModelLoad(uint32_t entityID, const std::string &modelPath, bool autoPlayAfterLoad);
         void processEvents();

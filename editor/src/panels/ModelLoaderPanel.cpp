@@ -1,4 +1,5 @@
 #include "ModelLoaderPanel.h"
+#include "IconDefs.h"
 #include <algorithm>
 #include <iostream>
 
@@ -17,7 +18,7 @@ namespace MaraGl
         ImGui::InputText("##ModelPath", m_PathBuffer, sizeof(m_PathBuffer));
 
         ImGui::SameLine();
-        if (ImGui::Button("Browse"))
+        if (ImGui::Button(Icons::Icon(Icons::Search, "Browse").c_str()))
         {
             m_ShowBrowser = true;
             // Populate directory contents
@@ -45,7 +46,7 @@ namespace MaraGl
             }
         }
 
-        if (ImGui::Button("Load Model"))
+        if (ImGui::Button(Icons::Icon(Icons::FileImport, "Load Model").c_str()))
         {
             m_SelectedPath = m_PathBuffer;
             m_ShouldLoadModel = true;
@@ -66,7 +67,7 @@ namespace MaraGl
             ImGui::Separator();
 
             // Parent directory button
-            if (ImGui::Button(".. (Parent)##parent"))
+            if (ImGui::Button(Icons::Icon(Icons::ChevronLeft, "Parent##parent").c_str()))
             {
                 auto parent = std::filesystem::path(m_CurrentDirectory).parent_path();
                 if (parent != m_CurrentDirectory)
@@ -104,7 +105,7 @@ namespace MaraGl
             {
                 for (const auto &[name, isDir] : m_DirectoryContents)
                 {
-                    std::string label = isDir ? "[DIR] " + name : name;
+                    std::string label = isDir ? Icons::Icon(Icons::Folder, name.c_str()) : Icons::Icon(Icons::FileOpen, name.c_str());
                     if (ImGui::Selectable(label.c_str()))
                     {
                         if (isDir)
@@ -147,14 +148,14 @@ namespace MaraGl
 
             ImGui::Separator();
 
-            if (ImGui::Button("OK", ImVec2(120, 0)))
+            if (ImGui::Button(Icons::Icon(Icons::Check, "OK").c_str(), ImVec2(120, 0)))
             {
                 m_ShowBrowser = false;
                 ImGui::CloseCurrentPopup();
             }
 
             ImGui::SameLine();
-            if (ImGui::Button("Cancel", ImVec2(120, 0)))
+            if (ImGui::Button(Icons::Icon(Icons::Times, "Cancel").c_str(), ImVec2(120, 0)))
             {
                 m_ShowBrowser = false;
                 ImGui::CloseCurrentPopup();

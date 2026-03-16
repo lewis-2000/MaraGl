@@ -66,10 +66,10 @@ namespace MaraGl
         for (auto &entity : m_Entities)
         {
             auto *animComp = entity->GetComponent<AnimationComponent>();
-            if (animComp && animComp->playing && !animComp->animations.empty())
+            if (animComp && !animComp->animations.empty())
             {
                 int currentAnimIndex = animComp->currentAnimation;
-                if (currentAnimIndex >= 0 && currentAnimIndex < animComp->animations.size())
+                if (currentAnimIndex >= 0 && currentAnimIndex < static_cast<int>(animComp->animations.size()))
                 {
                     MaraGl::Animation &animation = animComp->animations[currentAnimIndex];
 
@@ -79,7 +79,8 @@ namespace MaraGl
                         const aiScene *scene = meshComp->ModelPtr->GetScene();
                         if (scene && scene->mRootNode)
                         {
-                            Animator::UpdateAnimation(animComp, deltaTime);
+                            if (animComp->playing)
+                                Animator::UpdateAnimation(animComp, deltaTime);
 
                             // Initialize all bone transforms to identity before calculating
                             // Bones not found in hierarchy will remain as identity

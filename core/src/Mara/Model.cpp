@@ -42,12 +42,12 @@ void Model::loadModel(const std::string &path)
     std::filesystem::path modelPath(path);
     directory = modelPath.parent_path().string();
 
-    std::cout << "Model loaded from: " << path << std::endl;
-    std::cout << "Directory extracted: " << directory << std::endl;
+    // std::cout << "Model loaded from: " << path << std::endl;
+    // std::cout << "Directory extracted: " << directory << std::endl;
 
     if (m_Scene->HasAnimations())
     {
-        std::cout << "Model has " << m_Scene->mNumAnimations << " animations" << std::endl;
+        // std::cout << "Model has " << m_Scene->mNumAnimations << " animations" << std::endl;
     }
 
     // Debug: Print skeleton hierarchy
@@ -267,8 +267,8 @@ void Model::ExtractBoneWeights(std::vector<Vertex> &vertices, aiMesh *mesh,
         }
     }
 
-    std::cout << "[ExtractBoneWeights] Processed " << mesh->mNumBones
-              << " bones, total bone count: " << boneCount << std::endl;
+    // std::cout << "[ExtractBoneWeights] Processed " << mesh->mNumBones
+    //           << " bones, total bone count: " << boneCount << std::endl;
 }
 
 void Model::SetVertexBoneData(Vertex &vertex, int boneID, float weight)
@@ -289,7 +289,7 @@ std::vector<MaraGl::Animation> Model::LoadAnimations()
 
     if (!m_Scene || !m_Scene->HasAnimations())
     {
-        std::cout << "[LoadAnimations] No animations in scene" << std::endl;
+        // std::cout << "[LoadAnimations] No animations in scene" << std::endl;
         return animations;
     }
 
@@ -302,8 +302,8 @@ std::vector<MaraGl::Animation> Model::LoadAnimations()
         animation.ticksPerSecond = anim->mTicksPerSecond > 0 ? anim->mTicksPerSecond : 30.0f;
 
         // Debug: Show animation channels
-        std::cout << "[LoadAnimations] Animation '" << animation.name
-                  << "' has " << anim->mNumChannels << " channels:" << std::endl;
+        // std::cout << "[LoadAnimations] Animation '" << animation.name
+        //           << "' has " << anim->mNumChannels << " channels:" << std::endl;
         // for (unsigned int c = 0; c < anim->mNumChannels; c++)
         // {
         //     std::cout << "  - " << anim->mChannels[c]->mNodeName.C_Str() << std::endl;
@@ -326,8 +326,8 @@ std::vector<MaraGl::Animation> Model::LoadAnimations()
             // Check if this bone is in our boneInfoMap
             if (m_BoneInfoMap.find(boneName) == m_BoneInfoMap.end())
             {
-                std::cout << "  WARNING: Animation channel for bone '" << boneName
-                          << "' not found in bone map!" << std::endl;
+                // std::cout << "  WARNING: Animation channel for bone '" << boneName
+                //           << "' not found in bone map!" << std::endl;
             }
 
             MaraGl::BoneAnimation boneAnim;
@@ -368,20 +368,20 @@ std::vector<MaraGl::Animation> Model::LoadAnimations()
 
         animations.push_back(animation);
 
-        std::cout << "[LoadAnimations] Loaded '" << animation.name
-                  << "' - Duration: " << animation.duration
-                  << ", TPS: " << animation.ticksPerSecond
-                  << ", Channels: " << animation.boneAnimations.size() << std::endl;
+        // std::cout << "[LoadAnimations] Loaded '" << animation.name
+        //           << "' - Duration: " << animation.duration
+        //           << ", TPS: " << animation.ticksPerSecond
+        //           << ", Channels: " << animation.boneAnimations.size() << std::endl;
     }
 
-    std::cout << "[LoadAnimations] Total animations loaded: " << animations.size() << std::endl;
+    // std::cout << "[LoadAnimations] Total animations loaded: " << animations.size() << std::endl;
 
     // Debug: Show all bones in boneInfoMap
-    std::cout << "[LoadAnimations] Total bones in skeleton: " << m_BoneInfoMap.size() << std::endl;
-    std::cout << "[LoadAnimations] Bones in skeleton:" << std::endl;
+    // std::cout << "[LoadAnimations] Total bones in skeleton: " << m_BoneInfoMap.size() << std::endl;
+    // std::cout << "[LoadAnimations] Bones in skeleton:" << std::endl;
     for (const auto &[boneName, boneInfo] : m_BoneInfoMap)
     {
-        std::cout << "  - " << boneName << " (ID: " << boneInfo.id << ")" << std::endl;
+        // std::cout << "  - " << boneName << " (ID: " << boneInfo.id << ")" << std::endl;
     }
 
     return animations;
@@ -399,7 +399,7 @@ void Model::PrintNodeHierarchy(aiNode *node, int depth) const
     auto it = m_BoneInfoMap.find(nodeName);
     std::string boneInfo = (it != m_BoneInfoMap.end()) ? " [BONE ID: " + std::to_string(it->second.id) + "]" : "";
 
-    std::cout << indent << "- " << nodeName << boneInfo << std::endl;
+    // std::cout << indent << "- " << nodeName << boneInfo << std::endl;
 
     for (unsigned int i = 0; i < node->mNumChildren; i++)
     {

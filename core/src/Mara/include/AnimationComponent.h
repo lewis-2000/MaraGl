@@ -74,6 +74,32 @@ namespace MaraGl
 
         struct GraphState
         {
+            struct TransformFilterRule
+            {
+                std::string boneName;
+
+                bool lockPosX = false;
+                bool lockPosY = false;
+                bool lockPosZ = false;
+                float posWeightX = 1.0f;
+                float posWeightY = 1.0f;
+                float posWeightZ = 1.0f;
+
+                bool lockRotX = false;
+                bool lockRotY = false;
+                bool lockRotZ = false;
+                float rotWeightX = 1.0f;
+                float rotWeightY = 1.0f;
+                float rotWeightZ = 1.0f;
+
+                bool lockScaleX = false;
+                bool lockScaleY = false;
+                bool lockScaleZ = false;
+                float scaleWeightX = 1.0f;
+                float scaleWeightY = 1.0f;
+                float scaleWeightZ = 1.0f;
+            };
+
             std::string name;
             int libraryClip = -1;
             std::string modelPath; // Legacy fallback for old scene data.
@@ -88,6 +114,8 @@ namespace MaraGl
             bool rootMotionAllowVertical = false;
             float rootMotionScale = 1.0f;
             float rootMotionMaxSpeed = 4.0f;
+            std::vector<TransformFilterRule> transformFilters;
+            bool previewDisableTransformFilters = false;
         };
 
         struct GraphTransition
@@ -95,6 +123,9 @@ namespace MaraGl
             int fromState = 0;
             int toState = 0;
             std::string trigger;
+            bool hasExitTime = false;
+            float exitTimeNormalized = 0.95f;
+            float blendDuration = 0.1f;
         };
 
         struct InputBinding
@@ -121,6 +152,7 @@ namespace MaraGl
         bool playing = false;
         bool looping = true;
         float playbackSpeed = 1.0f;
+        bool wasPlayingLastFrame = false;
 
         void OnImGuiRender() override
         {

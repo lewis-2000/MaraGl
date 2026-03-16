@@ -392,6 +392,32 @@ namespace MaraGl
             stateJson["rootMotionAllowVertical"] = state.rootMotionAllowVertical;
             stateJson["rootMotionScale"] = state.rootMotionScale;
             stateJson["rootMotionMaxSpeed"] = state.rootMotionMaxSpeed;
+
+            stateJson["transformFilters"] = json::array();
+            for (const auto &filter : state.transformFilters)
+            {
+                json filterJson;
+                filterJson["boneName"] = filter.boneName;
+                filterJson["lockPosX"] = filter.lockPosX;
+                filterJson["lockPosY"] = filter.lockPosY;
+                filterJson["lockPosZ"] = filter.lockPosZ;
+                filterJson["posWeightX"] = filter.posWeightX;
+                filterJson["posWeightY"] = filter.posWeightY;
+                filterJson["posWeightZ"] = filter.posWeightZ;
+                filterJson["lockRotX"] = filter.lockRotX;
+                filterJson["lockRotY"] = filter.lockRotY;
+                filterJson["lockRotZ"] = filter.lockRotZ;
+                filterJson["rotWeightX"] = filter.rotWeightX;
+                filterJson["rotWeightY"] = filter.rotWeightY;
+                filterJson["rotWeightZ"] = filter.rotWeightZ;
+                filterJson["lockScaleX"] = filter.lockScaleX;
+                filterJson["lockScaleY"] = filter.lockScaleY;
+                filterJson["lockScaleZ"] = filter.lockScaleZ;
+                filterJson["scaleWeightX"] = filter.scaleWeightX;
+                filterJson["scaleWeightY"] = filter.scaleWeightY;
+                filterJson["scaleWeightZ"] = filter.scaleWeightZ;
+                stateJson["transformFilters"].push_back(filterJson);
+            }
             j["states"].push_back(stateJson);
         }
 
@@ -402,6 +428,9 @@ namespace MaraGl
             transitionJson["from"] = transition.fromState;
             transitionJson["to"] = transition.toState;
             transitionJson["trigger"] = transition.trigger;
+            transitionJson["hasExitTime"] = transition.hasExitTime;
+            transitionJson["exitTimeNormalized"] = transition.exitTimeNormalized;
+            transitionJson["blendDuration"] = transition.blendDuration;
             j["transitions"].push_back(transitionJson);
         }
 
@@ -518,6 +547,54 @@ namespace MaraGl
                     state.rootMotionScale = stateJson["rootMotionScale"].get<float>();
                 if (stateJson.contains("rootMotionMaxSpeed"))
                     state.rootMotionMaxSpeed = stateJson["rootMotionMaxSpeed"].get<float>();
+
+                state.transformFilters.clear();
+                if (stateJson.contains("transformFilters"))
+                {
+                    for (const auto &filterJson : stateJson["transformFilters"])
+                    {
+                        AnimationComponent::GraphState::TransformFilterRule filter;
+                        if (filterJson.contains("boneName"))
+                            filter.boneName = filterJson["boneName"].get<std::string>();
+                        if (filterJson.contains("lockPosX"))
+                            filter.lockPosX = filterJson["lockPosX"].get<bool>();
+                        if (filterJson.contains("lockPosY"))
+                            filter.lockPosY = filterJson["lockPosY"].get<bool>();
+                        if (filterJson.contains("lockPosZ"))
+                            filter.lockPosZ = filterJson["lockPosZ"].get<bool>();
+                        if (filterJson.contains("posWeightX"))
+                            filter.posWeightX = filterJson["posWeightX"].get<float>();
+                        if (filterJson.contains("posWeightY"))
+                            filter.posWeightY = filterJson["posWeightY"].get<float>();
+                        if (filterJson.contains("posWeightZ"))
+                            filter.posWeightZ = filterJson["posWeightZ"].get<float>();
+                        if (filterJson.contains("lockRotX"))
+                            filter.lockRotX = filterJson["lockRotX"].get<bool>();
+                        if (filterJson.contains("lockRotY"))
+                            filter.lockRotY = filterJson["lockRotY"].get<bool>();
+                        if (filterJson.contains("lockRotZ"))
+                            filter.lockRotZ = filterJson["lockRotZ"].get<bool>();
+                        if (filterJson.contains("rotWeightX"))
+                            filter.rotWeightX = filterJson["rotWeightX"].get<float>();
+                        if (filterJson.contains("rotWeightY"))
+                            filter.rotWeightY = filterJson["rotWeightY"].get<float>();
+                        if (filterJson.contains("rotWeightZ"))
+                            filter.rotWeightZ = filterJson["rotWeightZ"].get<float>();
+                        if (filterJson.contains("lockScaleX"))
+                            filter.lockScaleX = filterJson["lockScaleX"].get<bool>();
+                        if (filterJson.contains("lockScaleY"))
+                            filter.lockScaleY = filterJson["lockScaleY"].get<bool>();
+                        if (filterJson.contains("lockScaleZ"))
+                            filter.lockScaleZ = filterJson["lockScaleZ"].get<bool>();
+                        if (filterJson.contains("scaleWeightX"))
+                            filter.scaleWeightX = filterJson["scaleWeightX"].get<float>();
+                        if (filterJson.contains("scaleWeightY"))
+                            filter.scaleWeightY = filterJson["scaleWeightY"].get<float>();
+                        if (filterJson.contains("scaleWeightZ"))
+                            filter.scaleWeightZ = filterJson["scaleWeightZ"].get<float>();
+                        state.transformFilters.push_back(std::move(filter));
+                    }
+                }
                 anim.graphStates.push_back(state);
             }
         }
@@ -589,6 +666,12 @@ namespace MaraGl
                     transition.toState = transitionJson["to"].get<int>();
                 if (transitionJson.contains("trigger"))
                     transition.trigger = transitionJson["trigger"].get<std::string>();
+                if (transitionJson.contains("hasExitTime"))
+                    transition.hasExitTime = transitionJson["hasExitTime"].get<bool>();
+                if (transitionJson.contains("exitTimeNormalized"))
+                    transition.exitTimeNormalized = transitionJson["exitTimeNormalized"].get<float>();
+                if (transitionJson.contains("blendDuration"))
+                    transition.blendDuration = transitionJson["blendDuration"].get<float>();
                 anim.graphTransitions.push_back(transition);
             }
         }

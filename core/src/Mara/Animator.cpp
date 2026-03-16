@@ -1,12 +1,153 @@
 #include "Animator.h"
 #include "AnimationComponent.h"
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <algorithm>
 #include <cctype>
 #include <iostream>
 
 namespace MaraGl
 {
+    namespace
+    {
+        std::string ToLowerAscii(std::string value)
+        {
+            std::transform(value.begin(), value.end(), value.begin(),
+                           [](unsigned char c)
+                           { return static_cast<char>(std::tolower(c)); });
+            return value;
+        }
+
+        bool MatchesGlobPattern(const std::string &pattern, const std::string &text)
+        {
+            const std::string loweredPattern = ToLowerAscii(pattern);
+            const std::string loweredText = ToLowerAscii(text);
+
+            size_t patternIndex = 0;
+            size_t textIndex = 0;
+            size_t starIndex = std::string::npos;
+            size_t matchIndex = 0;
+
+            while (textIndex < loweredText.size())
+            {
+                if (patternIndex < loweredPattern.size() &&
+                    (loweredPattern[patternIndex] == '?' || loweredPattern[patternIndex] == loweredText[textIndex]))
+                {
+                    ++patternIndex;
+                    ++textIndex;
+                }
+                else if (patternIndex < loweredPattern.size() && loweredPattern[patternIndex] == '*')
+                {
+                    starIndex = patternIndex++;
+                    matchIndex = textIndex;
+                }
+                else if (starIndex != std::string::npos)
+                {
+                    patternIndex = starIndex + 1;
+                    textIndex = ++matchIndex;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            while (patternIndex < loweredPattern.size() && loweredPattern[patternIndex] == '*')
+                ++patternIndex;
+
+            return patternIndex == loweredPattern.size();
+        }
+
+        float ClampWeight(float weight)
+        {
+            return std::clamp(weight, 0.0f, 1.0f);
+        }
+
+        void ExtractTRS(const glm::mat4 &m,
+                        glm::vec3 &outTranslation,
+                        glm::quat &outRotation,
+                        glm::vec3 &outScale)
+        {
+            outTranslation = glm::vec3(m[3]);
+
+            glm::vec3 col0 = glm::vec3(m[0]);
+            glm::vec3 col1 = glm::vec3(m[1]);
+            glm::vec3 col2 = glm::vec3(m[2]);
+
+            outScale.x = glm::length(col0);
+            outScale.y = glm::length(col1);
+            outScale.z = glm::length(col2);
+
+            if (outScale.x > 0.000001f)
+                col0 /= outScale.x;
+            if (outScale.y > 0.000001f)
+                col1 /= outScale.y;
+            if (outScale.z > 0.000001f)
+                col2 /= outScale.z;
+
+            glm::mat3 rotationMat;
+            rotationMat[0] = col0;
+            rotationMat[1] = col1;
+            rotationMat[2] = col2;
+            outRotation = glm::normalize(glm::quat_cast(rotationMat));
+        }
+
+        void ApplyStateTransformFilter(AnimationComponent *animComp,
+                                       const std::string &nodeName,
+                                       const glm::vec3 &bindPosition,
+                                       const glm::quat &bindRotation,
+                                       const glm::vec3 &bindScale,
+                                       glm::vec3 &position,
+                                       glm::quat &rotation,
+                                       glm::vec3 &scale)
+        {
+            if (!animComp || !animComp->graphEnabled ||
+                animComp->activeState < 0 ||
+                animComp->activeState >= static_cast<int>(animComp->graphStates.size()))
+            {
+                return;
+            }
+
+            const auto &state = animComp->graphStates[static_cast<size_t>(animComp->activeState)];
+            if (state.previewDisableTransformFilters)
+                return;
+            if (state.transformFilters.empty())
+                return;
+
+            for (const auto &filter : state.transformFilters)
+            {
+                if (filter.boneName.empty())
+                    continue;
+                if (!MatchesGlobPattern(filter.boneName, nodeName))
+                    continue;
+
+                if (filter.lockPosX)
+                    position.x = glm::mix(position.x, bindPosition.x, ClampWeight(filter.posWeightX));
+                if (filter.lockPosY)
+                    position.y = glm::mix(position.y, bindPosition.y, ClampWeight(filter.posWeightY));
+                if (filter.lockPosZ)
+                    position.z = glm::mix(position.z, bindPosition.z, ClampWeight(filter.posWeightZ));
+
+                glm::vec3 animEuler = glm::eulerAngles(rotation);
+                const glm::vec3 bindEuler = glm::eulerAngles(bindRotation);
+                if (filter.lockRotX)
+                    animEuler.x = glm::mix(animEuler.x, bindEuler.x, ClampWeight(filter.rotWeightX));
+                if (filter.lockRotY)
+                    animEuler.y = glm::mix(animEuler.y, bindEuler.y, ClampWeight(filter.rotWeightY));
+                if (filter.lockRotZ)
+                    animEuler.z = glm::mix(animEuler.z, bindEuler.z, ClampWeight(filter.rotWeightZ));
+                rotation = glm::normalize(glm::quat(animEuler));
+
+                if (filter.lockScaleX)
+                    scale.x = glm::mix(scale.x, bindScale.x, ClampWeight(filter.scaleWeightX));
+                if (filter.lockScaleY)
+                    scale.y = glm::mix(scale.y, bindScale.y, ClampWeight(filter.scaleWeightY));
+                if (filter.lockScaleZ)
+                    scale.z = glm::mix(scale.z, bindScale.z, ClampWeight(filter.scaleWeightZ));
+            }
+        }
+    }
+
     void Animator::UpdateAnimation(AnimationComponent *animComp, float deltaTime)
     {
         if (!animComp || animComp->animations.empty() || !animComp->playing)
@@ -35,9 +176,9 @@ namespace MaraGl
         static int frameCount = 0;
         if (++frameCount % 60 == 0)
         {
-            std::cout << "[Animator] Playing: " << currentAnim.name
-                      << " | Time: " << animComp->currentTime << "/" << duration
-                      << " | Channels: " << currentAnim.boneAnimations.size() << std::endl;
+            /*  std::cout << "[Animator] Playing: " << currentAnim.name
+                        << " | Time: " << animComp->currentTime << "/" << duration
+                        << " | Channels: " << currentAnim.boneAnimations.size() << std::endl; */
         }
     }
 
@@ -62,6 +203,11 @@ namespace MaraGl
         std::string nodeName = node->mName.C_Str();
         glm::mat4 nodeTransform = ConvertMatrixToGLM(node->mTransformation);
 
+        glm::vec3 bindScale(1.0f);
+        glm::quat bindRotation(1.0f, 0.0f, 0.0f, 0.0f);
+        glm::vec3 bindPosition(0.0f);
+        ExtractTRS(nodeTransform, bindPosition, bindRotation, bindScale);
+
         // Find animation channel for this node
         const BoneAnimation *boneAnim = FindBoneAnimation(animation, nodeName);
 
@@ -69,6 +215,8 @@ namespace MaraGl
         {
             // Interpolate position, rotation, and scale
             glm::vec3 position = InterpolatePositionVec3(*boneAnim, animComp->currentTime);
+            glm::quat rotationQuat = InterpolateRotationQuat(*boneAnim, animComp->currentTime);
+            glm::vec3 scaleVec = InterpolateScaleVec3(*boneAnim, animComp->currentTime);
 
             const std::string lowerNodeName = [&nodeName]()
             {
@@ -101,9 +249,13 @@ namespace MaraGl
                     position.y = 0.0f;
             }
 
+            ApplyStateTransformFilter(animComp, nodeName,
+                                      bindPosition, bindRotation, bindScale,
+                                      position, rotationQuat, scaleVec);
+
             glm::mat4 translation = glm::translate(glm::mat4(1.0f), position);
-            glm::mat4 rotation = InterpolateRotation(*boneAnim, animComp->currentTime);
-            glm::mat4 scale = InterpolateScale(*boneAnim, animComp->currentTime);
+            glm::mat4 rotation = glm::mat4_cast(rotationQuat);
+            glm::mat4 scale = glm::scale(glm::mat4(1.0f), scaleVec);
 
             nodeTransform = translation * rotation * scale;
         }
@@ -123,8 +275,8 @@ namespace MaraGl
             }
             else
             {
-                std::cout << "[Animator] ERROR: Bone '" << nodeName << "' has invalid index "
-                          << boneIndex << " (array size: " << animComp->boneTransforms.size() << ")" << std::endl;
+                /* std::cout << "[Animator] ERROR: Bone '" << nodeName << "' has invalid index "
+                           << boneIndex << " (array size: " << animComp->boneTransforms.size() << ")" << std::endl; */
             }
         }
 
@@ -201,8 +353,18 @@ namespace MaraGl
 
     glm::mat4 Animator::InterpolateRotation(const BoneAnimation &boneAnim, float animationTime)
     {
+        return glm::mat4_cast(InterpolateRotationQuat(boneAnim, animationTime));
+    }
+
+    glm::mat4 Animator::InterpolateScale(const BoneAnimation &boneAnim, float animationTime)
+    {
+        return glm::scale(glm::mat4(1.0f), InterpolateScaleVec3(boneAnim, animationTime));
+    }
+
+    glm::quat Animator::InterpolateRotationQuat(const BoneAnimation &boneAnim, float animationTime)
+    {
         if (boneAnim.rotations.size() == 1)
-            return glm::mat4_cast(boneAnim.rotations[0].orientation);
+            return glm::normalize(boneAnim.rotations[0].orientation);
 
         int p0Index = FindRotationIndex(boneAnim, animationTime);
         int p1Index = p0Index + 1;
@@ -214,15 +376,13 @@ namespace MaraGl
         glm::quat finalRotation = glm::slerp(boneAnim.rotations[p0Index].orientation,
                                              boneAnim.rotations[p1Index].orientation,
                                              scaleFactor);
-        finalRotation = glm::normalize(finalRotation);
-
-        return glm::mat4_cast(finalRotation);
+        return glm::normalize(finalRotation);
     }
 
-    glm::mat4 Animator::InterpolateScale(const BoneAnimation &boneAnim, float animationTime)
+    glm::vec3 Animator::InterpolateScaleVec3(const BoneAnimation &boneAnim, float animationTime)
     {
         if (boneAnim.scales.size() == 1)
-            return glm::scale(glm::mat4(1.0f), boneAnim.scales[0].scale);
+            return boneAnim.scales[0].scale;
 
         int p0Index = FindScaleIndex(boneAnim, animationTime);
         int p1Index = p0Index + 1;
@@ -231,11 +391,9 @@ namespace MaraGl
                                            boneAnim.scales[p1Index].timeStamp,
                                            animationTime);
 
-        glm::vec3 finalScale = glm::mix(boneAnim.scales[p0Index].scale,
-                                        boneAnim.scales[p1Index].scale,
-                                        scaleFactor);
-
-        return glm::scale(glm::mat4(1.0f), finalScale);
+        return glm::mix(boneAnim.scales[p0Index].scale,
+                        boneAnim.scales[p1Index].scale,
+                        scaleFactor);
     }
 
     const BoneAnimation *Animator::FindBoneAnimation(const Animation &animation, const std::string &nodeName)
