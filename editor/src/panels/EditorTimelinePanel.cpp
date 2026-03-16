@@ -7,6 +7,7 @@
 #include "AnimationComponent.h"
 #include "MeshComponent.h"
 #include "Model.h"
+#include "IconDefs.h"
 #include <algorithm>
 #include <iostream>
 
@@ -44,15 +45,17 @@ namespace MaraGl
     {
         ImGui::SeparatorText("Playback");
 
-        if (ImGui::Button("⏮ Start"))
+        if (ImGui::Button(Icons::Icon(Icons::StepBack, "Start").c_str()))
             m_Timeline.currentTime = 0.0f;
 
         ImGui::SameLine();
-        if (ImGui::Button(m_Timeline.playing ? "⏸ Pause##timeline" : "▶ Play##timeline"))
+        if (ImGui::Button(m_Timeline.playing
+                              ? Icons::Icon(Icons::Pause, "Pause##timeline").c_str()
+                              : Icons::Icon(Icons::Play, "Play##timeline").c_str()))
             m_Timeline.playing = !m_Timeline.playing;
 
         ImGui::SameLine();
-        if (ImGui::Button("⏭ End"))
+        if (ImGui::Button(Icons::Icon(Icons::StepForward, "End").c_str()))
             m_Timeline.currentTime = m_Timeline.duration;
 
         ImGui::SameLine();
@@ -101,7 +104,7 @@ namespace MaraGl
             {
                 ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f),
                                    "✓ Model has %d animation(s)", meshComp->ModelPtr->GetAnimationCount());
-                ImGui::TextWrapped("Add AnimationComponent in Inspector and click 'Load Animations from Model'");
+                ImGui::TextWrapped("Add AnimationComponent. If using graph mode, import clips in Animation Graph and assign states.");
             }
             return;
         }
@@ -110,7 +113,10 @@ namespace MaraGl
         if (animComp->animations.empty())
         {
             ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.0f, 1.0f), "No animations loaded");
-            ImGui::TextWrapped("Load animations from Inspector panel");
+            if (animComp->graphEnabled)
+                ImGui::TextWrapped("Graph mode is active. Import/assign clips in Animation Graph to populate runtime playback.");
+            else
+                ImGui::TextWrapped("Load animations from Inspector panel.");
             return;
         }
 
@@ -141,11 +147,14 @@ namespace MaraGl
         // Playback controls
         ImGui::Spacing();
 
-        if (ImGui::Button(animComp->playing ? "⏸ Pause##skeletal" : "▶ Play##skeletal", ImVec2(80, 0)))
+        if (ImGui::Button(animComp->playing
+                              ? Icons::Icon(Icons::Pause, "Pause##skeletal").c_str()
+                              : Icons::Icon(Icons::Play, "Play##skeletal").c_str(),
+                          ImVec2(95, 0)))
             animComp->playing = !animComp->playing;
 
         ImGui::SameLine();
-        if (ImGui::Button("⏹ Stop", ImVec2(80, 0)))
+        if (ImGui::Button(Icons::Icon(Icons::Stop, "Stop").c_str(), ImVec2(95, 0)))
         {
             animComp->playing = false;
             animComp->currentTime = 0.0f;
@@ -201,13 +210,13 @@ namespace MaraGl
 
         // Animation details (collapsible)
         ImGui::Spacing();
-        if (ImGui::TreeNode("Animation Details"))
+        if (ImGui::TreeNode(Icons::Icon(Icons::Info, "Animation Details").c_str()))
         {
             ImGui::Text("Duration: %.2fs (%.0f ticks)", duration, currentAnim.duration);
             ImGui::Text("Ticks per Second: %.1f", currentAnim.ticksPerSecond);
             ImGui::Text("Bone Channels: %zu", currentAnim.boneAnimations.size());
 
-            if (ImGui::TreeNode("Bone List##anim"))
+            if (ImGui::TreeNode(Icons::Icon(Icons::Layer, "Bone List##anim").c_str()))
             {
                 for (const auto &[boneName, boneInfo] : animComp->boneInfoMap)
                 {
@@ -216,7 +225,7 @@ namespace MaraGl
                 ImGui::TreePop();
             }
 
-            if (ImGui::TreeNode("Channel Info##anim"))
+            if (ImGui::TreeNode(Icons::Icon(Icons::Film, "Channel Info##anim").c_str()))
             {
                 for (size_t i = 0; i < currentAnim.boneAnimations.size(); i++)
                 {

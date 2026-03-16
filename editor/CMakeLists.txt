@@ -8,6 +8,7 @@ add_executable(editor
     src/panels/HierarchyPanel.cpp
     src/panels/InspectorPanel.cpp
     src/panels/ModelLoaderPanel.cpp
+    src/panels/AnimationGraphPanel.cpp
     src/panels/SceneSettingsPanel.cpp
     src/panels/LoadingPanel.cpp
 )

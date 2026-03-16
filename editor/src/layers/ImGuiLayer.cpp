@@ -1,10 +1,12 @@
 #include "ImGuiLayer.h"
+#include "ImGuiFontSetup.h"
 #include "Renderer.h"
 
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 #include <imgui_internal.h>
+#include <imnodes.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
 
@@ -29,6 +31,7 @@ namespace MaraGl
     {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
+        ImNodes::CreateContext();
 
         ImGuiIO &io = ImGui::GetIO();
         // Enable keyboard navigation (Tab/Arrows/Enter to navigate UI)
@@ -46,22 +49,16 @@ namespace MaraGl
         ImGui_ImplGlfw_InitForOpenGL(m_Window.getWindow(), true);
         ImGui_ImplOpenGL3_Init("#version 460");
 
-        // --- Fonts ---
-        // Load Roboto font as default (used for UI text)
-        io.FontDefault = io.Fonts->AddFontFromFileTTF(
-            "resources/fonts/Roboto/Roboto-VariableFont_wdth,wght.ttf",
-            20.0f);
-
-        // Load Roboto Mono font (used for code/console text)
-        io.Fonts->AddFontFromFileTTF(
-            "resources/fonts/Roboto_Mono/RobotoMono-VariableFont_wght.ttf",
-            20.0f);
-
-        // IMPORTANT: After adding fonts, must rebuild the font atlas for rendering
-        io.Fonts->Build();
-
-        // Load icon fonts (if available)
-        LoadDefaultIconFonts();
+        const ImGuiFontSet fonts = ConfigureDefaultImGuiFonts(io, 20.0f, 20.0f);
+        if (fonts.mergedIconFont)
+        {
+            m_IconFonts["FontAwesome"] = fonts.mergedIconFont;
+            std::cout << "[ImGuiLayer] Merged FontAwesome icon glyphs from: " << fonts.mergedIconFontPath << std::endl;
+        }
+        else
+        {
+            LoadDefaultIconFonts();
+        }
 
         ApplyModernEditorStyle(); // Apply custom styling for a modern editor look
     }
@@ -148,6 +145,7 @@ namespace MaraGl
     // Called during destruction
     void ImGuiLayer::shutdown()
     {
+        ImNodes::DestroyContext();
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
@@ -188,6 +186,7 @@ namespace MaraGl
             m_Framebuffer = framebuffer;
             m_InspectorPanel = m_PanelManager.AddPanel<InspectorPanel>();
             m_ScenePanel = m_PanelManager.AddPanel<ScenePanel>(m_Framebuffer);
+            m_AnimationGraphPanel = m_PanelManager.AddPanel<AnimationGraphPanel>();
             m_HierarchyPanel = m_PanelManager.AddPanel<HierarchyPanel>();
             m_ModelLoaderPanel = m_PanelManager.AddPanel<ModelLoaderPanel>();
             m_TimelinePanel = m_PanelManager.AddPanel<EditorTimelinePanel>();
@@ -260,6 +259,7 @@ namespace MaraGl
                 // --- Dock windows ---
                 ImGui::DockBuilderDockWindow("Hierarchy", dock_left);
                 ImGui::DockBuilderDockWindow("Scene", dock_scene);
+                ImGui::DockBuilderDockWindow("Animation Graph", dock_scene);
                 ImGui::DockBuilderDockWindow("Inspector", dock_right);
 
                 ImGui::DockBuilderDockWindow("Timeline", dock_bottom);
@@ -293,6 +293,11 @@ namespace MaraGl
         }
         if (m_HierarchyPanel)
             m_HierarchyPanel->SetScene(scene);
+        if (m_AnimationGraphPanel)
+        {
+            m_AnimationGraphPanel->SetScene(scene);
+            m_AnimationGraphPanel->SetHierarchyPanel(m_HierarchyPanel);
+        }
         if (m_TimelinePanel)
         {
             m_TimelinePanel->SetScene(scene);
@@ -324,7 +329,6 @@ namespace MaraGl
         if (font)
         {
             m_IconFonts[fontName] = font;
-            io.Fonts->Build();
             return font;
         }
 
@@ -346,31 +350,20 @@ namespace MaraGl
 
     void ImGuiLayer::LoadDefaultIconFonts()
     {
-
-        // Supports both TTF and OTF formats
-
-        // Attempt to load FontAwesome icon font if available
-        // We'll try both TTF and OTF variants in multiple locations
         const char *faPathOptions[] = {
-            // TTF variants
-            // "resources/fonts/FontAwesome6-Solid.ttf",
-            // "resources/fonts/FontAwesome/FontAwesome6-Solid.ttf",
-            // "resources/fonts/icons/FontAwesome6-Solid.ttf",
-            // OTF variants
-            // "resources/fonts/FontAwesome6-Solid.otf",
-            "resources/fonts/FontAwesome/Font Awesome 6 Brands-Regular-400.otf",
-            "resources/fonts/icons/Font Awesome 6 Free-Regular-400.otf",
-            // Alternate naming (sometimes just "solid")
-            "resources/fonts/FontAwesome/Font Awesome 6 Free-Solid-900.otf"
-            // "resources/fonts/FontAwesome/solid.ttf"
-        };
+            "resources/fonts/FontAwesome/Font Awesome 6 Free-Solid-900.otf",
+            "resources/fonts/FontAwesome6-Solid.otf",
+            "resources/fonts/FontAwesome/FontAwesome6-Solid.otf",
+            "resources/fonts/icons/FontAwesome6-Solid.otf",
+            "resources/fonts/FontAwesome/Font Awesome 6 Free-Regular-400.otf",
+            "resources/fonts/FontAwesome/Font Awesome 6 Brands-Regular-400.otf"};
 
         for (const auto &path : faPathOptions)
         {
             ImFont *faFont = LoadIconFont(path, 14.0f, "FontAwesome");
             if (faFont)
             {
-                std::cout << "[ImGuiLayer] Successfully loaded FontAwesome icon font from: " << path << std::endl;
+                std::cout << "[ImGuiLayer] Loaded fallback FontAwesome icon font from: " << path << std::endl;
                 return;
             }
         }
@@ -378,7 +371,7 @@ namespace MaraGl
         std::cout << "[ImGuiLayer] No icon font found. To add icon support:" << std::endl;
         std::cout << "  1. Download FontAwesome 6 Free from fontawesome.com/download" << std::endl;
         std::cout << "  2. Extract the downloaded file" << std::endl;
-        std::cout << "  3. Copy 'FontAwesome6-Solid.otf' (or .ttf) to resources/fonts/" << std::endl;
+        std::cout << "  3. Copy 'Font Awesome 6 Free-Solid-900.otf' (or FontAwesome6-Solid.otf/.ttf) to resources/fonts/" << std::endl;
         std::cout << "  4. Restart the application" << std::endl;
         std::cout << "  5. Use Icons::* constants from IconDefs.h with GetIconFont()" << std::endl;
     }

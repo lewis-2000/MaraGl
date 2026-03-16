@@ -2,6 +2,7 @@
 #include "Scene.h"
 #include "NameComponent.h"
 #include "TransformComponent.h"
+#include "IconDefs.h"
 #include <imgui.h>
 
 namespace MaraGl
@@ -23,7 +24,7 @@ namespace MaraGl
             m_SelectedEntityID = 0;
 
         // Create entity button
-        if (ImGui::Button("+ Create Entity"))
+        if (ImGui::Button(Icons::Icon(Icons::Plus, "Create Entity").c_str()))
         {
             Entity &newEntity = m_Scene->CreateEntity("New Entity");
             auto &nameComp = newEntity.AddComponent<NameComponent>();
@@ -35,14 +36,14 @@ namespace MaraGl
         ImGui::SameLine();
 
         // Delete selected entity button
-        if (m_SelectedEntityID != 0 && ImGui::Button("Delete Selected"))
+        if (m_SelectedEntityID != 0 && ImGui::Button(Icons::Icon(Icons::Delete, "Delete Selected").c_str()))
         {
             m_Scene->DestroyEntity(m_SelectedEntityID);
             m_SelectedEntityID = 0;
         }
 
         ImGui::Separator();
-        ImGui::Text("Entities: %zu", m_Scene->GetEntities().size());
+        ImGui::Text("%s Entities: %zu", Icons::Layer, m_Scene->GetEntities().size());
         ImGui::Separator();
 
         // List all entities

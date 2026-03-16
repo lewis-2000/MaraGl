@@ -18,7 +18,7 @@ namespace MaraGl
         if (numThreads == 0)
             numThreads = 2;
 
-        std::cout << "[AssetLoader] Starting " << numThreads << " worker threads" << std::endl;
+        // std::cout << "[AssetLoader] Starting " << numThreads << " worker threads" << std::endl;
         for (unsigned int i = 0; i < numThreads; ++i)
         {
             m_Workers.emplace_back(&AssetLoader::WorkerThread, this);
@@ -27,7 +27,7 @@ namespace MaraGl
 
     AssetLoader::~AssetLoader()
     {
-        std::cout << "[AssetLoader] Shutting down..." << std::endl;
+        // std::cout << "[AssetLoader] Shutting down..." << std::endl;
         m_Running = false;
         m_QueueCV.notify_all();
 
@@ -36,7 +36,7 @@ namespace MaraGl
             if (worker.joinable())
                 worker.join();
         }
-        std::cout << "[AssetLoader] Shutdown complete" << std::endl;
+        // std::cout << "[AssetLoader] Shutdown complete" << std::endl;
     }
 
     void AssetLoader::LoadModelAsync(const std::string &path, const std::string &name,
@@ -54,7 +54,7 @@ namespace MaraGl
         }
         m_QueueCV.notify_one();
 
-        std::cout << "[AssetLoader] Queued model load: " << path << std::endl;
+        // std::cout << "[AssetLoader] Queued model load: " << path << std::endl;
     }
 
     void AssetLoader::LoadSceneAsync(Scene *scene, const std::string &path,
@@ -73,7 +73,7 @@ namespace MaraGl
         }
         m_QueueCV.notify_one();
 
-        std::cout << "[AssetLoader] Queued scene load: " << path << std::endl;
+        // std::cout << "[AssetLoader] Queued scene load: " << path << std::endl;
     }
 
     void AssetLoader::LoadSkyboxAsync(Scene *scene, const std::string &path,
@@ -92,7 +92,7 @@ namespace MaraGl
         }
         m_QueueCV.notify_one();
 
-        std::cout << "[AssetLoader] Queued skybox load: " << path << std::endl;
+        // std::cout << "[AssetLoader] Queued skybox load: " << path << std::endl;
     }
 
     std::vector<LoadingProgress> AssetLoader::GetLoadingProgress()
@@ -204,7 +204,7 @@ namespace MaraGl
         {
             m_RequestQueue.pop();
         }
-        std::cout << "[AssetLoader] Cancelled all pending loads" << std::endl;
+        // std::cout << "[AssetLoader] Cancelled all pending loads" << std::endl;
     }
 
     void AssetLoader::WorkerThread()
@@ -286,23 +286,23 @@ namespace MaraGl
         completed.errorMessage = "";
 
         // Extract callback from userData
-        std::cout << "[AssetLoader] ProcessModelLoad: userData=" << request.userData << std::endl;
+        // std::cout << "[AssetLoader] ProcessModelLoad: userData=" << request.userData << std::endl;
 
         auto *callbackPtr = static_cast<std::function<void(std::shared_ptr<Model>, bool, const std::string &)> *>(request.userData);
         if (callbackPtr)
         {
-            std::cout << "[AssetLoader] ProcessModelLoad: Callback extracted from userData" << std::endl;
+            // std::cout << "[AssetLoader] ProcessModelLoad: Callback extracted from userData" << std::endl;
             completed.modelCallback = *callbackPtr;
             delete callbackPtr;
         }
         else
         {
-            std::cout << "[AssetLoader] ProcessModelLoad: ERROR - callbackPtr is null!" << std::endl;
+            // std::cout << "[AssetLoader] ProcessModelLoad: ERROR - callbackPtr is null!" << std::endl;
         }
 
         try
         {
-            std::cout << "[AssetLoader] Loading model: " << request.path << std::endl;
+            // std::cout << "[AssetLoader] Loading model: " << request.path << std::endl;
 
             // Update progress
             {
@@ -322,7 +322,7 @@ namespace MaraGl
             completed.success = true;
             completed.errorMessage = "";
 
-            std::cout << "[AssetLoader] Model loaded successfully: " << request.path << " model=" << (bool)completed.model << std::endl;
+            // std::cout << "[AssetLoader] Model loaded successfully: " << request.path << " model=" << (bool)completed.model << std::endl;
         }
         catch (const std::exception &e)
         {
@@ -340,8 +340,8 @@ namespace MaraGl
         // Queue completion callback
         {
             std::lock_guard<std::mutex> lock(m_CompletedMutex);
-            std::cout << "[AssetLoader] Queuing completed load: success=" << completed.success
-                      << " hasCallback=" << (bool)completed.modelCallback << " hasModel=" << (bool)completed.model << std::endl;
+            // std::cout << "[AssetLoader] Queuing completed load: success=" << completed.success
+            //           << " hasCallback=" << (bool)completed.modelCallback << " hasModel=" << (bool)completed.model << std::endl;
             m_CompletedLoads.push(completed);
         }
     }

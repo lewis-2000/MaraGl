@@ -6,6 +6,7 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <cstdint>
 #include <imgui.h>
 
 namespace MaraGl
@@ -58,19 +59,105 @@ namespace MaraGl
 
     struct AnimationComponent : public Component
     {
+        struct AnimationLibraryEntry
+        {
+            std::string displayName;
+            std::string sourceModelPath;
+            int sourceClipIndex = 0;
+            float durationSeconds = 0.0f;
+            std::vector<std::string> channelBoneNames;
+            glm::vec3 rootTranslationDelta = glm::vec3(0.0f);
+            glm::vec3 rootRotationDeltaEuler = glm::vec3(0.0f);
+            glm::vec3 rootScaleDelta = glm::vec3(0.0f);
+            int resolvedAnimationIndex = -1;
+        };
+
+        struct GraphState
+        {
+            struct TransformFilterRule
+            {
+                std::string boneName;
+
+                bool lockPosX = false;
+                bool lockPosY = false;
+                bool lockPosZ = false;
+                float posWeightX = 1.0f;
+                float posWeightY = 1.0f;
+                float posWeightZ = 1.0f;
+
+                bool lockRotX = false;
+                bool lockRotY = false;
+                bool lockRotZ = false;
+                float rotWeightX = 1.0f;
+                float rotWeightY = 1.0f;
+                float rotWeightZ = 1.0f;
+
+                bool lockScaleX = false;
+                bool lockScaleY = false;
+                bool lockScaleZ = false;
+                float scaleWeightX = 1.0f;
+                float scaleWeightY = 1.0f;
+                float scaleWeightZ = 1.0f;
+            };
+
+            std::string name;
+            int libraryClip = -1;
+            std::string modelPath; // Legacy fallback for old scene data.
+            int clipIndex = 0;     // Legacy fallback for old scene data.
+            bool loop = true;
+            glm::vec2 nodePosition = glm::vec2(0.0f);
+            float durationSeconds = 0.0f;
+            glm::vec3 rootTranslationDelta = glm::vec3(0.0f);
+            glm::vec3 rootRotationDeltaEuler = glm::vec3(0.0f);
+            glm::vec3 rootScaleDelta = glm::vec3(0.0f);
+            bool rootMotionEnabled = true;
+            bool rootMotionAllowVertical = false;
+            float rootMotionScale = 1.0f;
+            float rootMotionMaxSpeed = 4.0f;
+            std::vector<TransformFilterRule> transformFilters;
+            bool previewDisableTransformFilters = false;
+        };
+
+        struct GraphTransition
+        {
+            int fromState = 0;
+            int toState = 0;
+            std::string trigger;
+            bool hasExitTime = false;
+            float exitTimeNormalized = 0.95f;
+            float blendDuration = 0.1f;
+        };
+
+        struct InputBinding
+        {
+            std::string trigger;
+            int key = -1;
+        };
+
         std::vector<Animation> animations;
         std::map<std::string, BoneInfo> boneInfoMap;
         std::vector<glm::mat4> boneTransforms; // Final transforms sent to shader
+
+        // Animation graph authoring/runtime data.
+        bool graphEnabled = false;
+        int activeState = 0;
+        glm::vec2 entryNodePosition = glm::vec2(-280.0f, 60.0f);
+        std::vector<AnimationLibraryEntry> animationLibrary;
+        std::vector<GraphState> graphStates;
+        std::vector<GraphTransition> graphTransitions;
+        std::vector<InputBinding> inputBindings;
 
         int currentAnimation = 0;
         float currentTime = 0.0f;
         bool playing = false;
         bool looping = true;
         float playbackSpeed = 1.0f;
+        bool wasPlayingLastFrame = false;
 
         void OnImGuiRender() override
         {
             ImGui::Text("Animations: %zu", animations.size());
+            ImGui::Text("Graph States: %zu", graphStates.size());
 
             if (animations.empty())
             {

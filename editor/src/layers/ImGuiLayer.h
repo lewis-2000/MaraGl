@@ -5,6 +5,7 @@
 #include "Renderer.h"
 #include "InspectorPanel.h"
 #include "ScenePanel.h"
+#include "AnimationGraphPanel.h"
 #include "HierarchyPanel.h"
 #include "ModelLoaderPanel.h"
 #include "SceneSettingsPanel.h"
@@ -46,9 +47,9 @@ namespace MaraGl
         void ApplyModernEditorStyle();
 
         // Icon font management
-        ImFont *LoadIconFont(const std::string &fontPath, float fontSize, const char *fontName = "Icons");
-        ImFont *GetIconFont(const char *fontName = "Icons") const;
-        bool HasIconFont(const char *fontName = "Icons") const;
+        ImFont *LoadIconFont(const std::string &fontPath, float fontSize, const char *fontName = "FontAwesome");
+        ImFont *GetIconFont(const char *fontName = "FontAwesome") const;
+        bool HasIconFont(const char *fontName = "FontAwesome") const;
 
     private:
         void init();
@@ -60,6 +61,7 @@ namespace MaraGl
         Framebuffer *m_Framebuffer = nullptr;
         PanelManager m_PanelManager;
         ScenePanel *m_ScenePanel = nullptr;
+        AnimationGraphPanel *m_AnimationGraphPanel = nullptr;
         ModelLoaderPanel *m_ModelLoaderPanel = nullptr;
         HierarchyPanel *m_HierarchyPanel = nullptr;
         EditorTimelinePanel *m_TimelinePanel = nullptr;

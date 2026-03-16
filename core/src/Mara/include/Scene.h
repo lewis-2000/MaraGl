@@ -51,6 +51,7 @@ namespace MaraGl
         bool LoadSkybox(const std::string &skyboxPath);
         void SetSkyboxEnabled(bool enabled) { m_SkyboxEnabled = enabled; }
         bool IsSkyboxEnabled() const { return m_SkyboxEnabled; }
+        const std::string &GetSkyboxPath() const { return m_SkyboxPath; }
 
         void SetLightGizmoVisible(bool visible) { m_LightGizmoVisible = visible; }
         bool IsLightGizmoVisible() const { return m_LightGizmoVisible; }
@@ -78,6 +79,7 @@ namespace MaraGl
         std::unique_ptr<::Plane> m_GroundPlane;
         std::unique_ptr<::Skybox> m_Skybox;
         bool m_SkyboxEnabled = false;
+        std::string m_SkyboxPath;
         std::unique_ptr<::LightGizmo> m_LightGizmo;
         std::unique_ptr<::Shader> m_UnlitShader;
         std::unique_ptr<::Shader> m_GridShader;

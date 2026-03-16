@@ -24,8 +24,8 @@
   ],
   "settings": {
     "skybox": {
-      "enabled": false,
-      "path": ""
+      "enabled": true,
+      "path": "resources/skybox/citrus_orchard_road_puresky_2k.exr"
     },
     "overcast": {
       "enabled": true,
