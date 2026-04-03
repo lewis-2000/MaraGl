@@ -1,5 +1,6 @@
 #pragma once
 #include "Component.h"
+#include "Mesh.h"
 #include <memory>
 #include <imgui.h>
 
@@ -13,6 +14,12 @@ namespace MaraGl
         std::string ModelPath; // Path to the model file for serialization
         bool Visible = true;
         float ModelScale = 1.0f; // Per-model scale multiplier
+        std::vector<MeshMaterialOverride> MeshMaterials;
+
+        void EnsureMeshMaterialCount(size_t meshCount)
+        {
+            MeshMaterials.resize(meshCount);
+        }
 
         void OnImGuiRender() override
         {

@@ -91,7 +91,25 @@ namespace MaraGl
 
                             glm::mat4 identity(1.0f);
                             glm::mat4 globalInverseTransform = Animator::GetGlobalInverseTransform(scene);
-                            Animator::CalculateBoneTransform(animComp, animation, scene->mRootNode, identity, globalInverseTransform);
+
+                            if (animComp->isBlending && animComp->IsValidAnimationIndex(animComp->nextAnimation))
+                            {
+                                const Animation &nextAnimation = animComp->animations[static_cast<size_t>(animComp->nextAnimation)];
+                                const float blendFactor = (animComp->blendDuration > 0.0001f)
+                                                              ? std::clamp(animComp->blendTime / animComp->blendDuration, 0.0f, 1.0f)
+                                                              : 1.0f;
+                                Animator::CalculateBoneTransform(animComp,
+                                                                 animation,
+                                                                 &nextAnimation,
+                                                                 scene->mRootNode,
+                                                                 identity,
+                                                                 globalInverseTransform,
+                                                                 blendFactor);
+                            }
+                            else
+                            {
+                                Animator::CalculateBoneTransform(animComp, animation, scene->mRootNode, identity, globalInverseTransform);
+                            }
                         }
                     }
                 }
@@ -252,7 +270,12 @@ namespace MaraGl
             }
 
             // Draw every visible mesh each frame.
-            renderer.DrawModel(*meshComp->ModelPtr, shader, transform);
+            if (meshComp->MeshMaterials.size() != meshComp->ModelPtr->GetMeshCount())
+            {
+                meshComp->EnsureMeshMaterialCount(meshComp->ModelPtr->GetMeshCount());
+            }
+
+            renderer.DrawModel(*meshComp->ModelPtr, shader, transform, &meshComp->MeshMaterials);
         }
 
         // Render light gizmos (editor visualization)

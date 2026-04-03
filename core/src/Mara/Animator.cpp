@@ -148,26 +148,147 @@ namespace MaraGl
         }
     }
 
+    Animator::LocalTransform Animator::SampleLocalTransform(AnimationComponent *animComp,
+                                                            const Animation &animation,
+                                                            float animationTime,
+                                                            const std::string &nodeName,
+                                                            const glm::vec3 &bindPosition,
+                                                            const glm::quat &bindRotation,
+                                                            const glm::vec3 &bindScale)
+    {
+        LocalTransform transform;
+        transform.position = bindPosition;
+        transform.rotation = bindRotation;
+        transform.scale = bindScale;
+
+        const BoneAnimation *boneAnim = FindBoneAnimation(animation, nodeName);
+        if (!boneAnim)
+            return transform;
+
+        transform.position = InterpolatePositionVec3(*boneAnim, animationTime);
+        transform.rotation = InterpolateRotationQuat(*boneAnim, animationTime);
+        transform.scale = InterpolateScaleVec3(*boneAnim, animationTime);
+
+        const std::string lowerNodeName = ToLowerAscii(nodeName);
+        const bool isLikelyRootMotionBone =
+            (lowerNodeName.find("hips") != std::string::npos) ||
+            (lowerNodeName.find("pelvis") != std::string::npos) ||
+            (lowerNodeName.find("root") != std::string::npos);
+
+        if (isLikelyRootMotionBone && !boneAnim->positions.empty())
+        {
+            const glm::vec3 startPosition = boneAnim->positions.front().position;
+            transform.position -= startPosition;
+
+            bool allowVerticalRootPose = false;
+            if (animComp && animComp->graphEnabled &&
+                animComp->activeState >= 0 &&
+                animComp->activeState < static_cast<int>(animComp->graphStates.size()))
+            {
+                allowVerticalRootPose = animComp->graphStates[static_cast<size_t>(animComp->activeState)].rootMotionAllowVertical;
+            }
+
+            if (!allowVerticalRootPose)
+                transform.position.y = 0.0f;
+        }
+
+        ApplyStateTransformFilter(animComp,
+                                  nodeName,
+                                  bindPosition,
+                                  bindRotation,
+                                  bindScale,
+                                  transform.position,
+                                  transform.rotation,
+                                  transform.scale);
+
+        return transform;
+    }
+
+    Animator::LocalTransform Animator::BlendLocalTransforms(const LocalTransform &primary,
+                                                            const LocalTransform &secondary,
+                                                            float blendFactor)
+    {
+        const float t = std::clamp(blendFactor, 0.0f, 1.0f);
+        LocalTransform result;
+        result.position = glm::mix(primary.position, secondary.position, t);
+        result.rotation = glm::normalize(glm::slerp(primary.rotation, secondary.rotation, t));
+        result.scale = glm::mix(primary.scale, secondary.scale, t);
+        return result;
+    }
+
     void Animator::UpdateAnimation(AnimationComponent *animComp, float deltaTime)
     {
         if (!animComp || animComp->animations.empty() || !animComp->playing)
             return;
 
-        Animation &currentAnim = animComp->animations[animComp->currentAnimation];
-
-        // Update animation time
-        animComp->currentTime += currentAnim.ticksPerSecond * deltaTime * animComp->playbackSpeed;
-
-        float duration = currentAnim.duration;
-        if (animComp->looping)
+        auto advanceTime = [animComp, deltaTime](int animationIndex, float &time, bool loop)
         {
-            animComp->currentTime = fmod(animComp->currentTime, duration);
-        }
-        else
-        {
-            if (animComp->currentTime >= duration)
+            if (!animComp->IsValidAnimationIndex(animationIndex))
+                return;
+
+            const Animation &animation = animComp->animations[static_cast<size_t>(animationIndex)];
+            const float ticksPerSecond = animation.ticksPerSecond > 0.0f ? animation.ticksPerSecond : 1.0f;
+            const float duration = std::max(animation.duration, 0.0001f);
+
+            time += ticksPerSecond * deltaTime * animComp->playbackSpeed;
+            if (loop)
             {
-                animComp->currentTime = duration;
+                time = std::fmod(time, duration);
+                if (time < 0.0f)
+                    time += duration;
+            }
+            else if (time >= duration)
+            {
+                time = duration;
+            }
+        };
+
+        if (animComp->isBlending && animComp->IsValidAnimationIndex(animComp->nextAnimation))
+        {
+            advanceTime(animComp->currentAnimation, animComp->currentTime, animComp->looping);
+            advanceTime(animComp->nextAnimation, animComp->nextTime, animComp->nextLooping);
+
+            animComp->blendTime += deltaTime * animComp->playbackSpeed;
+            if (animComp->blendTime >= animComp->blendDuration)
+            {
+                animComp->currentAnimation = animComp->nextAnimation;
+                animComp->currentTime = animComp->nextTime;
+                animComp->looping = animComp->nextLooping;
+                animComp->ClearBlendState();
+
+                if (animComp->graphTransitionActive)
+                {
+                    if (animComp->pendingGraphState >= 0)
+                        animComp->activeState = animComp->pendingGraphState;
+                    animComp->graphTransitionActive = false;
+                    animComp->pendingGraphState = -1;
+                }
+            }
+
+            return;
+        }
+
+        if (animComp->IsValidAnimationIndex(animComp->currentAnimation))
+        {
+            const Animation &currentAnim = animComp->animations[static_cast<size_t>(animComp->currentAnimation)];
+            const float duration = std::max(currentAnim.duration, 0.0001f);
+            advanceTime(animComp->currentAnimation, animComp->currentTime, animComp->looping);
+
+            const bool reachedEnd = (!animComp->looping && animComp->currentTime >= duration - 0.0001f);
+            if (reachedEnd && animComp->queuedAnimation >= 0 && animComp->IsValidAnimationIndex(animComp->queuedAnimation))
+            {
+                animComp->nextAnimation = animComp->queuedAnimation;
+                animComp->nextLooping = animComp->queuedLooping;
+                animComp->nextTime = animComp->queuedRestart ? 0.0f : animComp->currentTime;
+                animComp->blendDuration = std::max(0.0001f, animComp->queuedBlendDuration);
+                animComp->blendTime = 0.0f;
+                animComp->isBlending = true;
+                animComp->ClearQueuedAnimation();
+                return;
+            }
+
+            if (reachedEnd && !animComp->looping && animComp->queuedAnimation < 0)
+            {
                 animComp->playing = false;
             }
         }
@@ -197,6 +318,17 @@ namespace MaraGl
                                           const glm::mat4 &parentTransform,
                                           const glm::mat4 &globalInverseTransform)
     {
+        CalculateBoneTransform(animComp, animation, nullptr, node, parentTransform, globalInverseTransform, 0.0f);
+    }
+
+    void Animator::CalculateBoneTransform(AnimationComponent *animComp,
+                                          const Animation &primaryAnimation,
+                                          const Animation *secondaryAnimation,
+                                          const aiNode *node,
+                                          const glm::mat4 &parentTransform,
+                                          const glm::mat4 &globalInverseTransform,
+                                          float blendFactor)
+    {
         if (!node)
             return;
 
@@ -208,57 +340,30 @@ namespace MaraGl
         glm::vec3 bindPosition(0.0f);
         ExtractTRS(nodeTransform, bindPosition, bindRotation, bindScale);
 
-        // Find animation channel for this node
-        const BoneAnimation *boneAnim = FindBoneAnimation(animation, nodeName);
+        LocalTransform primaryPose = SampleLocalTransform(animComp,
+                                                          primaryAnimation,
+                                                          animComp ? animComp->currentTime : 0.0f,
+                                                          nodeName,
+                                                          bindPosition,
+                                                          bindRotation,
+                                                          bindScale);
 
-        if (boneAnim)
+        LocalTransform finalPose = primaryPose;
+        if (secondaryAnimation && blendFactor > 0.0f)
         {
-            // Interpolate position, rotation, and scale
-            glm::vec3 position = InterpolatePositionVec3(*boneAnim, animComp->currentTime);
-            glm::quat rotationQuat = InterpolateRotationQuat(*boneAnim, animComp->currentTime);
-            glm::vec3 scaleVec = InterpolateScaleVec3(*boneAnim, animComp->currentTime);
-
-            const std::string lowerNodeName = [&nodeName]()
-            {
-                std::string name = nodeName;
-                std::transform(name.begin(), name.end(), name.begin(),
-                               [](unsigned char c)
-                               { return static_cast<char>(std::tolower(c)); });
-                return name;
-            }();
-
-            const bool isLikelyRootMotionBone =
-                (lowerNodeName.find("hips") != std::string::npos) ||
-                (lowerNodeName.find("pelvis") != std::string::npos) ||
-                (lowerNodeName.find("root") != std::string::npos);
-
-            if (isLikelyRootMotionBone && !boneAnim->positions.empty())
-            {
-                const glm::vec3 startPosition = boneAnim->positions.front().position;
-                position -= startPosition;
-
-                bool allowVerticalRootPose = false;
-                if (animComp->graphEnabled &&
-                    animComp->activeState >= 0 &&
-                    animComp->activeState < static_cast<int>(animComp->graphStates.size()))
-                {
-                    allowVerticalRootPose = animComp->graphStates[static_cast<size_t>(animComp->activeState)].rootMotionAllowVertical;
-                }
-
-                if (!allowVerticalRootPose)
-                    position.y = 0.0f;
-            }
-
-            ApplyStateTransformFilter(animComp, nodeName,
-                                      bindPosition, bindRotation, bindScale,
-                                      position, rotationQuat, scaleVec);
-
-            glm::mat4 translation = glm::translate(glm::mat4(1.0f), position);
-            glm::mat4 rotation = glm::mat4_cast(rotationQuat);
-            glm::mat4 scale = glm::scale(glm::mat4(1.0f), scaleVec);
-
-            nodeTransform = translation * rotation * scale;
+            LocalTransform secondaryPose = SampleLocalTransform(animComp,
+                                                                *secondaryAnimation,
+                                                                animComp ? animComp->nextTime : 0.0f,
+                                                                nodeName,
+                                                                bindPosition,
+                                                                bindRotation,
+                                                                bindScale);
+            finalPose = BlendLocalTransforms(primaryPose, secondaryPose, blendFactor);
         }
+
+        nodeTransform = glm::translate(glm::mat4(1.0f), finalPose.position) *
+                        glm::mat4_cast(finalPose.rotation) *
+                        glm::scale(glm::mat4(1.0f), finalPose.scale);
 
         glm::mat4 globalTransform = parentTransform * nodeTransform;
 
@@ -283,7 +388,7 @@ namespace MaraGl
         // Recursively process all children (even those without animation channels)
         for (unsigned int i = 0; i < node->mNumChildren; i++)
         {
-            CalculateBoneTransform(animComp, animation, node->mChildren[i], globalTransform, globalInverseTransform);
+            CalculateBoneTransform(animComp, primaryAnimation, secondaryAnimation, node->mChildren[i], globalTransform, globalInverseTransform, blendFactor);
         }
     }
 
@@ -329,6 +434,8 @@ namespace MaraGl
 
     glm::vec3 Animator::InterpolatePositionVec3(const BoneAnimation &boneAnim, float animationTime)
     {
+        if (boneAnim.positions.empty())
+            return glm::vec3(0.0f);
         if (boneAnim.positions.size() == 1)
             return boneAnim.positions[0].position;
 
@@ -363,6 +470,8 @@ namespace MaraGl
 
     glm::quat Animator::InterpolateRotationQuat(const BoneAnimation &boneAnim, float animationTime)
     {
+        if (boneAnim.rotations.empty())
+            return glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
         if (boneAnim.rotations.size() == 1)
             return glm::normalize(boneAnim.rotations[0].orientation);
 
@@ -381,6 +490,8 @@ namespace MaraGl
 
     glm::vec3 Animator::InterpolateScaleVec3(const BoneAnimation &boneAnim, float animationTime)
     {
+        if (boneAnim.scales.empty())
+            return glm::vec3(1.0f);
         if (boneAnim.scales.size() == 1)
             return boneAnim.scales[0].scale;
 

@@ -39,7 +39,7 @@ namespace MaraGl
         // Enable docking: allows windows to be docked and collapsed
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         // Enable viewports: allows windows to float outside the main window
-        // io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+        io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
         ImGui::StyleColorsDark();
         // ImGui::StyleColorsLight();
@@ -201,6 +201,8 @@ namespace MaraGl
                 SetScene(m_Scene);
             if (m_AssetLoader)
                 SetAssetLoader(m_AssetLoader);
+            if (m_ScenePanel && renderer)
+                m_ScenePanel->SetRenderer(renderer);
         }
         else if (framebuffer != m_Framebuffer && m_ScenePanel)
         {
@@ -208,6 +210,9 @@ namespace MaraGl
             m_Framebuffer = framebuffer;
             m_ScenePanel->SetFramebuffer(m_Framebuffer);
         }
+
+        if (m_ScenePanel && renderer)
+            m_ScenePanel->SetRenderer(renderer);
 
         ImGuiViewport *viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos(viewport->WorkPos);
@@ -260,9 +265,9 @@ namespace MaraGl
                 ImGui::DockBuilderDockWindow("Hierarchy", dock_left);
                 ImGui::DockBuilderDockWindow("Scene", dock_scene);
                 ImGui::DockBuilderDockWindow("Animation Graph", dock_scene);
+                ImGui::DockBuilderDockWindow("Timeline", dock_scene);
                 ImGui::DockBuilderDockWindow("Inspector", dock_right);
 
-                ImGui::DockBuilderDockWindow("Timeline", dock_bottom);
                 ImGui::DockBuilderDockWindow("Console", dock_bottom);
                 ImGui::DockBuilderDockWindow("Assets", dock_bottom);
                 ImGui::DockBuilderDockWindow("Model Loader", dock_bottom);
@@ -293,6 +298,11 @@ namespace MaraGl
         }
         if (m_HierarchyPanel)
             m_HierarchyPanel->SetScene(scene);
+        if (m_ScenePanel)
+        {
+            m_ScenePanel->SetScene(scene);
+            m_ScenePanel->SetHierarchyPanel(m_HierarchyPanel);
+        }
         if (m_AnimationGraphPanel)
         {
             m_AnimationGraphPanel->SetScene(scene);

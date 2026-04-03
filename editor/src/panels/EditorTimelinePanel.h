@@ -36,6 +36,14 @@ namespace MaraGl
     };
 
     // Bone sequencer track - represents one bone's animation channel
+    struct BonePoseKeyframe
+    {
+        float time = 0.0f;
+        glm::vec3 position = glm::vec3(0.0f);
+        glm::vec3 rotation = glm::vec3(0.0f);
+        glm::vec3 scale = glm::vec3(1.0f);
+    };
+
     struct BoneSequencerTrack
     {
         std::string boneName;
@@ -44,6 +52,7 @@ namespace MaraGl
         int keyframeCount = 0;
         float minTime = 0.0f;
         float maxTime = 0.0f;
+        std::vector<BonePoseKeyframe> keyframes;
     };
 
     // Bone sequencer state for an entity's animation
@@ -51,6 +60,14 @@ namespace MaraGl
     {
         uint32_t entityID = 0;
         int animationIndex = -1; // Start at -1 so first comparison triggers discovery
+        int sourceAnimationIndex = -1;
+        std::string assetPath;
+        float previewTime = 0.0f;
+        float previewDuration = 5.0f;
+        float previewSpeed = 1.0f;
+        bool previewPlaying = false;
+        bool previewLooping = true;
+        int selectedTrackIndex = -1;
         std::vector<BoneSequencerTrack> tracks;
         std::set<std::string> discoveredBones;
         bool needsRefresh = true;

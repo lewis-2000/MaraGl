@@ -202,11 +202,13 @@ namespace MaraGl
 
             if (resolvedIndex >= 0 && resolvedIndex < static_cast<int>(animComp->animations.size()))
             {
-                animComp->currentAnimation = resolvedIndex;
                 const auto &clip = animComp->animations[static_cast<size_t>(resolvedIndex)];
                 state.durationSeconds = (clip.ticksPerSecond > 0.0f)
                                             ? (clip.duration / clip.ticksPerSecond)
                                             : 0.0f;
+
+                if (animComp->activeState == stateIndex)
+                    animComp->PlayAnimation(resolvedIndex, state.loop, 0.0f, true);
             }
         }
 
@@ -538,7 +540,13 @@ namespace MaraGl
             animComp->playing = !animComp->playing;
 
         if (WasKeyPressedOnce(GLFW_KEY_R))
+        {
             animComp->currentTime = 0.0f;
+            animComp->ClearBlendState();
+            animComp->ClearQueuedAnimation();
+            animComp->graphTransitionActive = false;
+            animComp->pendingGraphState = -1;
+        }
 
         for (const auto &binding : animComp->inputBindings)
         {

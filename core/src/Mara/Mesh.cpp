@@ -1,5 +1,6 @@
 #include "Mesh.h"
 #include <string>
+#include <utility>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -70,8 +71,8 @@ void Mesh::ClearTextureCache()
     g_FailedTextureLoads.clear();
 }
 
-Mesh::Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vector<Texture> textures, bool deferSetup)
-    : vertices(vertices), indices(indices), textures(textures)
+Mesh::Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vector<Texture> textures, std::string name, bool deferSetup)
+    : vertices(vertices), indices(indices), textures(textures), name(std::move(name))
 {
     if (!deferSetup)
     {
@@ -111,7 +112,7 @@ void Mesh::setupMesh()
     ebo->Unbind();
 }
 
-void Mesh::Draw(Shader &shader)
+void Mesh::Draw(Shader &shader, const MeshMaterialOverride *overrideMaterial)
 {
     // Lazily initialize GL objects if not done yet
     if (!m_GLObjectsInitialized)
@@ -134,24 +135,53 @@ void Mesh::Draw(Shader &shader)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     }
 
+    const MeshMaterialOverride *activeMaterial = overrideMaterial;
+    MeshMaterialOverride fallbackMaterial;
+    if (!activeMaterial)
+    {
+        activeMaterial = &fallbackMaterial;
+    }
+
+    bool forceColorOnly = activeMaterial->mode == MeshMaterialOverride::Mode::Color;
     bool hasBoundValidTexture = false;
-    if (!textures.empty())
+    if (!forceColorOnly)
     {
         unsigned int boundTextureUnit = 0;
 
-        for (unsigned int i = 0; i < textures.size(); i++)
+        Texture customTexture;
+        if (activeMaterial->mode == MeshMaterialOverride::Mode::Texture && !activeMaterial->texturePath.empty())
         {
-            if (!UploadTextureIfNeeded(textures[i]))
-                continue;
+            customTexture.path = activeMaterial->texturePath;
+            customTexture.type = GL_TEXTURE_2D;
+            if (UploadTextureIfNeeded(customTexture))
+            {
+                glActiveTexture(GL_TEXTURE0 + boundTextureUnit);
+                glBindTexture(GL_TEXTURE_2D, customTexture.ID);
+                shader.setInt("uDiffuseMap", boundTextureUnit);
+                shader.setBool("uUseTexture", true);
+                shader.setVec3("uObjectColor", activeMaterial->color);
+                hasBoundValidTexture = true;
+            }
+        }
 
-            glActiveTexture(GL_TEXTURE0 + boundTextureUnit);
-            glBindTexture(GL_TEXTURE_2D, textures[i].ID);
+        if (!hasBoundValidTexture && !textures.empty())
+        {
+            for (unsigned int i = 0; i < textures.size(); i++)
+            {
+                if (!UploadTextureIfNeeded(textures[i]))
+                    continue;
 
-            // Engine shader currently consumes one diffuse map.
-            shader.setInt("uDiffuseMap", boundTextureUnit);
+                glActiveTexture(GL_TEXTURE0 + boundTextureUnit);
+                glBindTexture(GL_TEXTURE_2D, textures[i].ID);
 
-            hasBoundValidTexture = true;
-            break;
+                // Engine shader currently consumes one diffuse map.
+                shader.setInt("uDiffuseMap", boundTextureUnit);
+                shader.setBool("uUseTexture", true);
+                shader.setVec3("uObjectColor", activeMaterial->color);
+
+                hasBoundValidTexture = true;
+                break;
+            }
         }
     }
 
@@ -160,6 +190,8 @@ void Mesh::Draw(Shader &shader)
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, defaultWhiteTex);
         shader.setInt("uDiffuseMap", 0);
+        shader.setBool("uUseTexture", false);
+        shader.setVec3("uObjectColor", activeMaterial->color);
     }
 
     // Draw mesh

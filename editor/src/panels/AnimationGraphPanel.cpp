@@ -410,7 +410,7 @@ namespace MaraGl
             state.rootScaleDelta = entry.rootScaleDelta;
 
             if (anim->activeState == stateIndex)
-                anim->currentAnimation = resolvedIndex;
+                anim->PlayAnimation(resolvedIndex, state.loop, 0.0f, true);
         }
 
         void RebuildResolvedRuntimeClips(AnimationComponent *anim)
@@ -427,9 +427,7 @@ namespace MaraGl
 
             if (anim->animations.empty())
             {
-                anim->currentAnimation = 0;
-                anim->playing = false;
-                anim->currentTime = 0.0f;
+                anim->StopAnimation();
                 return;
             }
 
@@ -1741,8 +1739,10 @@ namespace MaraGl
                     RebuildResolvedRuntimeClips(anim);
                 else
                     ResolveStateRuntimeClip(anim, m_SelectedStateIndex);
-                anim->currentTime = 0.0f;
-                anim->playing = false;
+                if (anim->IsValidAnimationIndex(anim->currentAnimation))
+                    anim->PlayAnimation(anim->currentAnimation, state.loop, 0.0f, true);
+                else
+                    anim->StopAnimation();
                 anim->looping = state.loop;
             }
 

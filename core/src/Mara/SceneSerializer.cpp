@@ -236,6 +236,16 @@ namespace MaraGl
         j["visible"] = comp->Visible;
         j["scale"] = comp->ModelScale;
         j["modelPath"] = comp->ModelPath;
+
+        j["meshMaterials"] = json::array();
+        for (const auto &material : comp->MeshMaterials)
+        {
+            json materialJson;
+            materialJson["mode"] = static_cast<int>(material.mode);
+            materialJson["color"] = {material.color.x, material.color.y, material.color.z};
+            materialJson["texturePath"] = material.texturePath;
+            j["meshMaterials"].push_back(materialJson);
+        }
         return j;
     }
 
@@ -299,6 +309,10 @@ namespace MaraGl
                 try
                 {
                     mesh.ModelPtr = std::make_shared<Model>(modelPath);
+                    if (mesh.ModelPtr)
+                    {
+                        mesh.EnsureMeshMaterialCount(mesh.ModelPtr->GetMeshCount());
+                    }
                     std::cout << "Loaded model: " << modelPath << std::endl;
                 }
                 catch (const std::exception &e)
@@ -306,6 +320,33 @@ namespace MaraGl
                     std::cerr << "Failed to load model '" << modelPath << "': " << e.what() << std::endl;
                 }
             }
+        }
+
+        if (j.contains("meshMaterials"))
+        {
+            mesh.MeshMaterials.clear();
+            for (const auto &materialJson : j["meshMaterials"])
+            {
+                MeshMaterialOverride material;
+                if (materialJson.contains("mode"))
+                {
+                    material.mode = static_cast<MeshMaterialOverride::Mode>(materialJson["mode"].get<int>());
+                }
+                if (materialJson.contains("color"))
+                {
+                    material.color = glm::vec3(materialJson["color"][0], materialJson["color"][1], materialJson["color"][2]);
+                }
+                if (materialJson.contains("texturePath"))
+                {
+                    material.texturePath = materialJson["texturePath"].get<std::string>();
+                }
+                mesh.MeshMaterials.push_back(material);
+            }
+        }
+
+        if (mesh.ModelPtr)
+        {
+            mesh.EnsureMeshMaterialCount(mesh.ModelPtr->GetMeshCount());
         }
     }
 

@@ -33,6 +33,7 @@ target_sources(core PRIVATE
     src/Mara/LightGizmo.cpp
     src/Mara/SceneSerializer.cpp
     src/Mara/Animator.cpp
+    src/Mara/AnimationAsset.cpp
     src/Mara/AssetLoader.cpp
     ${VENDOR_DIR}/imnodes/imnodes.cpp
  )

@@ -14,12 +14,15 @@ class Model
 {
 public:
     Model(const std::string &path);
-    void Draw(Shader &shader);
+    void Draw(Shader &shader, const std::vector<MeshMaterialOverride> *materialOverrides = nullptr);
 
     // Animation support
     const aiScene *GetScene() const { return m_Scene; }
     bool HasAnimations() const { return m_Scene && m_Scene->mNumAnimations > 0; }
     unsigned int GetAnimationCount() const { return m_Scene ? m_Scene->mNumAnimations : 0; }
+    size_t GetMeshCount() const { return meshes.size(); }
+    const std::vector<Mesh> &GetMeshes() const { return meshes; }
+    std::vector<Mesh> &GetMeshes() { return meshes; }
     const std::map<std::string, MaraGl::BoneInfo> &GetBoneInfoMap() const { return m_BoneInfoMap; }
     int GetBoneCount() const { return m_BoneCount; }
     std::vector<MaraGl::Animation> LoadAnimations();

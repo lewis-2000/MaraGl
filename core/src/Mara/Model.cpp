@@ -14,11 +14,17 @@ Model::Model(const std::string &path)
     loadModel(path);
 }
 
-void Model::Draw(Shader &shader)
+void Model::Draw(Shader &shader, const std::vector<MeshMaterialOverride> *materialOverrides)
 {
-    for (auto &mesh : meshes)
+    for (size_t i = 0; i < meshes.size(); ++i)
     {
-        mesh.Draw(shader);
+        const MeshMaterialOverride *overrideMaterial = nullptr;
+        if (materialOverrides && i < materialOverrides->size())
+        {
+            overrideMaterial = &(*materialOverrides)[i];
+        }
+
+        meshes[i].Draw(shader, overrideMaterial);
     }
 }
 
@@ -152,7 +158,8 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
     }
 
     // Defer OpenGL object creation to main thread
-    return Mesh(vertices, indices, textures, true); // deferSetup = true
+    std::string meshName = mesh->mName.C_Str();
+    return Mesh(vertices, indices, textures, meshName, true); // deferSetup = true
 }
 
 std::vector<Texture> Model::loadMaterialTextures(

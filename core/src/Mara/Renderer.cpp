@@ -44,35 +44,18 @@ namespace MaraGl
 
     void Renderer::DrawModel(::Model &model, ::Shader &shader)
     {
-        shader.use();
-
-        glm::mat4 modelMat(1.0f);
-        modelMat = glm::scale(modelMat, glm::vec3(m_Settings.modelScale));
-
-        shader.setMat4("model", modelMat);
-        shader.setMat4("view", m_Camera->GetView());
-        shader.setMat4("projection", m_Camera->GetProjection());
-
-        shader.setVec3("uViewPos", m_Camera->GetPosition());
-        shader.setVec3("uLightDir", glm::normalize(m_Settings.lightDir));
-        shader.setVec3("uLightColor", m_Settings.lightColor);
-        shader.setVec3("uObjectColor", m_Settings.objectColor);
-
-        shader.setBool("uUseTexture", m_Settings.useTexture);
-        shader.setInt("uDiffuseMap", 0);
-
-        shader.setFloat("uAmbientStrength", m_Settings.ambientStrength);
-        shader.setFloat("uSpecularStrength", m_Settings.specularStrength);
-        shader.setFloat("uShininess", m_Settings.shininess);
-
-        model.Draw(shader);
+        DrawModel(model, shader, glm::mat4(1.0f), nullptr);
     }
 
     void Renderer::DrawModel(::Model &model, ::Shader &shader, const glm::mat4 &transform)
     {
+        DrawModel(model, shader, transform, nullptr);
+    }
+
+    void Renderer::DrawModel(::Model &model, ::Shader &shader, const glm::mat4 &transform, const std::vector<MeshMaterialOverride> *materialOverrides)
+    {
         shader.use();
 
-        // Use provided transform matrix
         shader.setMat4("model", transform);
         shader.setMat4("view", m_Camera->GetView());
         shader.setMat4("projection", m_Camera->GetProjection());
@@ -89,6 +72,6 @@ namespace MaraGl
         shader.setFloat("uSpecularStrength", m_Settings.specularStrength);
         shader.setFloat("uShininess", m_Settings.shininess);
 
-        model.Draw(shader);
+        model.Draw(shader, materialOverrides);
     }
 }

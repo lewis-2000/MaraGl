@@ -111,6 +111,55 @@ namespace MaraGl
                 {
                     ImGui::Spacing();
 
+                    static bool showTextureBrowser = false;
+                    static int textureTargetMeshIndex = -1;
+                    static std::string textureCurrentDirectory = std::filesystem::current_path().string();
+                    static std::vector<std::pair<std::string, bool>> textureDirectoryContents;
+                    static std::string selectedTexturePath;
+
+                    auto refreshTextureDirectory = [&]()
+                    {
+                        try
+                        {
+                            textureDirectoryContents.clear();
+                            for (const auto &entry : std::filesystem::directory_iterator(textureCurrentDirectory))
+                            {
+                                textureDirectoryContents.push_back({entry.path().filename().string(), entry.is_directory()});
+                            }
+                            std::sort(textureDirectoryContents.begin(), textureDirectoryContents.end(),
+                                      [](const auto &a, const auto &b)
+                                      {
+                                          if (a.second != b.second)
+                                              return a.second > b.second;
+                                          return a.first < b.first;
+                                      });
+                        }
+                        catch (const std::exception &)
+                        {
+                        }
+                    };
+
+                    auto openTextureBrowser = [&](int meshIndex, const std::string &path)
+                    {
+                        textureTargetMeshIndex = meshIndex;
+                        selectedTexturePath = path;
+                        if (!selectedTexturePath.empty())
+                        {
+                            try
+                            {
+                                textureCurrentDirectory = std::filesystem::path(selectedTexturePath).parent_path().string();
+                            }
+                            catch (const std::exception &)
+                            {
+                                textureCurrentDirectory = std::filesystem::current_path().string();
+                            }
+                        }
+                        if (textureCurrentDirectory.empty())
+                            textureCurrentDirectory = std::filesystem::current_path().string();
+                        refreshTextureDirectory();
+                        showTextureBrowser = true;
+                    };
+
                     // File picker state (shared UI state for inspector model selection)
                     static bool showModelBrowser = false;
                     static std::string currentDirectory = std::filesystem::current_path().string();
@@ -236,6 +285,11 @@ namespace MaraGl
                                 {
                                     meshComp->ModelPtr = std::make_shared<Model>(selectedPath);
                                     meshComp->ModelPath = selectedPath;
+                                    meshComp->MeshMaterials.clear();
+                                    if (meshComp->ModelPtr)
+                                    {
+                                        meshComp->EnsureMeshMaterialCount(meshComp->ModelPtr->GetMeshCount());
+                                    }
                                     ImGui::OpenPopup("ModelLoadSuccess");
                                     showModelBrowser = false;
                                     ImGui::CloseCurrentPopup();
@@ -260,11 +314,135 @@ namespace MaraGl
                     if (ImGui::Button(Icons::Icon(Icons::Delete, "Clear Model##mesh").c_str()))
                     {
                         meshComp->ModelPtr.reset();
+                        meshComp->MeshMaterials.clear();
                     }
 
                     if (ImGui::BeginPopup("ModelLoadSuccess"))
                     {
                         ImGui::Text("Model loaded successfully!");
+                        ImGui::EndPopup();
+                    }
+
+                    if (meshComp->ModelPtr)
+                    {
+                        meshComp->EnsureMeshMaterialCount(meshComp->ModelPtr->GetMeshCount());
+
+                        ImGui::Spacing();
+                        ImGui::Separator();
+                        ImGui::Text("Mesh Materials");
+
+                        const auto &loadedMeshes = meshComp->ModelPtr->GetMeshes();
+                        for (size_t meshIndex = 0; meshIndex < loadedMeshes.size(); ++meshIndex)
+                        {
+                            auto &material = meshComp->MeshMaterials[meshIndex];
+                            const std::string meshLabel = loadedMeshes[meshIndex].GetName().empty()
+                                                              ? std::string("Mesh ") + std::to_string(meshIndex)
+                                                              : loadedMeshes[meshIndex].GetName();
+
+                            ImGui::PushID(static_cast<int>(meshIndex));
+                            if (ImGui::CollapsingHeader(meshLabel.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+                            {
+                                int mode = static_cast<int>(material.mode);
+                                if (ImGui::Combo("Material Mode", &mode, "Default\0Color\0Texture\0"))
+                                {
+                                    material.mode = static_cast<MeshMaterialOverride::Mode>(mode);
+                                }
+
+                                if (material.mode == MeshMaterialOverride::Mode::Color)
+                                {
+                                    ImGui::ColorEdit3("Color", &material.color.x);
+                                }
+                                else if (material.mode == MeshMaterialOverride::Mode::Texture)
+                                {
+                                    ImGui::TextWrapped("Texture: %s", material.texturePath.empty() ? "Model texture" : material.texturePath.c_str());
+
+                                    if (ImGui::Button("Browse Texture##meshTexture"))
+                                    {
+                                        openTextureBrowser(static_cast<int>(meshIndex), material.texturePath);
+                                    }
+
+                                    ImGui::SameLine();
+                                    if (ImGui::Button("Clear Texture##meshTexture"))
+                                    {
+                                        material.texturePath.clear();
+                                    }
+                                }
+                            }
+                            ImGui::PopID();
+                        }
+                    }
+                    else
+                    {
+                        ImGui::TextWrapped("Load a model to edit per-mesh materials.");
+                    }
+
+                    if (showTextureBrowser)
+                    {
+                        ImGui::OpenPopup("##InspectorTextureBrowser");
+                    }
+
+                    if (ImGui::BeginPopupModal("##InspectorTextureBrowser", &showTextureBrowser, ImGuiWindowFlags_AlwaysAutoResize))
+                    {
+                        ImGui::Text("Current: %s", textureCurrentDirectory.c_str());
+                        ImGui::Separator();
+
+                        if (ImGui::Button(Icons::Icon(Icons::ChevronLeft, "Parent##texture_parent").c_str()))
+                        {
+                            auto parent = std::filesystem::path(textureCurrentDirectory).parent_path();
+                            if (!parent.empty() && parent.string() != textureCurrentDirectory)
+                            {
+                                textureCurrentDirectory = parent.string();
+                                refreshTextureDirectory();
+                            }
+                        }
+
+                        ImGui::Separator();
+                        if (ImGui::BeginListBox("##texture_filelist", ImVec2(520, 320)))
+                        {
+                            for (const auto &[name, isDir] : textureDirectoryContents)
+                            {
+                                std::string label = isDir ? Icons::Icon(Icons::Folder, name.c_str()) : Icons::Icon(Icons::FileOpen, name.c_str());
+                                bool isSelected = (!isDir && selectedTexturePath == (std::filesystem::path(textureCurrentDirectory) / name).string());
+                                if (ImGui::Selectable(label.c_str(), isSelected))
+                                {
+                                    if (isDir)
+                                    {
+                                        textureCurrentDirectory = (std::filesystem::path(textureCurrentDirectory) / name).string();
+                                        refreshTextureDirectory();
+                                    }
+                                    else
+                                    {
+                                        selectedTexturePath = (std::filesystem::path(textureCurrentDirectory) / name).string();
+                                    }
+                                }
+                            }
+                            ImGui::EndListBox();
+                        }
+
+                        ImGui::Separator();
+                        if (!selectedTexturePath.empty())
+                        {
+                            ImGui::TextWrapped("Selected: %s", selectedTexturePath.c_str());
+                        }
+
+                        if (ImGui::Button(Icons::Icon(Icons::Check, "Use Texture##inspector_use_texture").c_str(), ImVec2(160, 0)))
+                        {
+                            if (textureTargetMeshIndex >= 0 && meshComp->ModelPtr && textureTargetMeshIndex < static_cast<int>(meshComp->MeshMaterials.size()) && !selectedTexturePath.empty())
+                            {
+                                meshComp->MeshMaterials[textureTargetMeshIndex].mode = MeshMaterialOverride::Mode::Texture;
+                                meshComp->MeshMaterials[textureTargetMeshIndex].texturePath = selectedTexturePath;
+                                showTextureBrowser = false;
+                                ImGui::CloseCurrentPopup();
+                            }
+                        }
+
+                        ImGui::SameLine();
+                        if (ImGui::Button(Icons::Icon(Icons::Times, "Cancel##texture_cancel").c_str(), ImVec2(120, 0)))
+                        {
+                            showTextureBrowser = false;
+                            ImGui::CloseCurrentPopup();
+                        }
+
                         ImGui::EndPopup();
                     }
                 }
@@ -295,6 +473,8 @@ namespace MaraGl
                                 // Load animations from the model
                                 animComp->animations = meshComp->ModelPtr->LoadAnimations();
                                 animComp->boneInfoMap = meshComp->ModelPtr->GetBoneInfoMap();
+                                animComp->ClearBlendState();
+                                animComp->ClearQueuedAnimation();
 
                                 // Initialize bone transforms array with identity matrices
                                 int boneCount = meshComp->ModelPtr->GetBoneCount();
@@ -304,8 +484,7 @@ namespace MaraGl
                                 // Calculate initial bind pose transforms
                                 if (!animComp->animations.empty())
                                 {
-                                    animComp->currentAnimation = 0;
-                                    animComp->currentTime = 0.0f;
+                                    animComp->PlayAnimation(0, true, 0.0f, true);
 
                                     // Calculate bone transforms for first frame
                                     const aiScene *scene = meshComp->ModelPtr->GetScene();

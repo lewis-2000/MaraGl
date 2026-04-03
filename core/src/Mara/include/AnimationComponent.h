@@ -1,5 +1,6 @@
 #pragma once
 #include "Component.h"
+#include <algorithm>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <assimp/scene.h>
@@ -138,6 +139,98 @@ namespace MaraGl
         std::map<std::string, BoneInfo> boneInfoMap;
         std::vector<glm::mat4> boneTransforms; // Final transforms sent to shader
 
+        int nextAnimation = -1;
+        float nextTime = 0.0f;
+        bool nextLooping = true;
+        float blendDuration = 0.0f;
+        float blendTime = 0.0f;
+        bool isBlending = false;
+
+        int queuedAnimation = -1;
+        bool queuedLooping = true;
+        float queuedBlendDuration = 0.0f;
+        bool queuedRestart = true;
+
+        bool graphTransitionActive = false;
+        int pendingGraphState = -1;
+
+        bool IsValidAnimationIndex(int index) const
+        {
+            return index >= 0 && index < static_cast<int>(animations.size());
+        }
+
+        void ClearBlendState()
+        {
+            nextAnimation = -1;
+            nextTime = 0.0f;
+            nextLooping = true;
+            blendDuration = 0.0f;
+            blendTime = 0.0f;
+            isBlending = false;
+        }
+
+        void ClearQueuedAnimation()
+        {
+            queuedAnimation = -1;
+            queuedLooping = true;
+            queuedBlendDuration = 0.0f;
+            queuedRestart = true;
+        }
+
+        void StopAnimation(bool clearQueue = true)
+        {
+            playing = false;
+            currentTime = 0.0f;
+            wasPlayingLastFrame = false;
+            ClearBlendState();
+            if (clearQueue)
+                ClearQueuedAnimation();
+            graphTransitionActive = false;
+            pendingGraphState = -1;
+        }
+
+        void QueueAnimation(int animationIndex,
+                            bool loop = true,
+                            float blendSeconds = 0.2f,
+                            bool restart = true)
+        {
+            if (!IsValidAnimationIndex(animationIndex))
+                return;
+
+            queuedAnimation = animationIndex;
+            queuedLooping = loop;
+            queuedBlendDuration = std::max(0.0f, blendSeconds);
+            queuedRestart = restart;
+        }
+
+        void PlayAnimation(int animationIndex,
+                           bool loop = true,
+                           float blendSeconds = 0.0f,
+                           bool restart = true)
+        {
+            if (!IsValidAnimationIndex(animationIndex))
+                return;
+
+            ClearQueuedAnimation();
+            playing = true;
+
+            if (!IsValidAnimationIndex(currentAnimation) || blendSeconds <= 0.0f || currentAnimation == animationIndex)
+            {
+                currentAnimation = animationIndex;
+                looping = loop;
+                currentTime = restart ? 0.0f : currentTime;
+                ClearBlendState();
+                return;
+            }
+
+            nextAnimation = animationIndex;
+            nextTime = restart ? 0.0f : currentTime;
+            nextLooping = loop;
+            blendDuration = std::max(0.0001f, blendSeconds);
+            blendTime = 0.0f;
+            isBlending = true;
+        }
+
         // Animation graph authoring/runtime data.
         bool graphEnabled = false;
         int activeState = 0;
@@ -156,28 +249,32 @@ namespace MaraGl
 
         void OnImGuiRender() override
         {
+            ImGui::PushID(this);
             ImGui::Text("Animations: %zu", animations.size());
             ImGui::Text("Graph States: %zu", graphStates.size());
 
             if (animations.empty())
             {
                 ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.0f, 1.0f), "No animations loaded");
+                ImGui::PopID();
                 return;
             }
 
             // Animation selector
-            if (ImGui::BeginCombo("Animation##anim", animations[currentAnimation].name.c_str()))
+            const int activeAnimation = IsValidAnimationIndex(currentAnimation) ? currentAnimation : 0;
+            if (ImGui::BeginCombo("Animation##anim", animations[static_cast<size_t>(activeAnimation)].name.c_str()))
             {
                 for (size_t i = 0; i < animations.size(); i++)
                 {
                     bool isSelected = (currentAnimation == static_cast<int>(i));
+                    ImGui::PushID(static_cast<int>(i));
                     if (ImGui::Selectable(animations[i].name.c_str(), isSelected))
                     {
-                        currentAnimation = static_cast<int>(i);
-                        currentTime = 0.0f; // Reset time when switching animations
+                        PlayAnimation(static_cast<int>(i), looping, 0.15f, true);
                     }
                     if (isSelected)
                         ImGui::SetItemDefaultFocus();
+                    ImGui::PopID();
                 }
                 ImGui::EndCombo();
             }
@@ -189,8 +286,7 @@ namespace MaraGl
             ImGui::SameLine();
             if (ImGui::Button("⏹ Stop##anim"))
             {
-                playing = false;
-                currentTime = 0.0f;
+                StopAnimation();
             }
 
             ImGui::Checkbox("Loop##anim", &looping);
@@ -204,6 +300,8 @@ namespace MaraGl
             {
                 // User manually scrubbed - pause playback
                 playing = false;
+                ClearBlendState();
+                ClearQueuedAnimation();
             }
 
             ImGui::SliderFloat("Speed##anim", &playbackSpeed, 0.1f, 3.0f);
@@ -213,7 +311,8 @@ namespace MaraGl
             ImGui::Text("Duration: %.2fs", duration);
             ImGui::Text("Ticks/Second: %.1f", animations[currentAnimation].ticksPerSecond);
             ImGui::Text("Bones: %zu", boneInfoMap.size());
-            ImGui::Text("Channels: %zu", animations[currentAnimation].boneAnimations.size());
+            ImGui::Text("Channels: %zu", animations[static_cast<size_t>(activeAnimation)].boneAnimations.size());
+            ImGui::PopID();
         }
     };
 }

@@ -18,6 +18,7 @@
 #include <atomic>
 #include <array>
 #include <memory>
+#include <string>
 #include <GLFW/glfw3.h>
 
 namespace MaraGl
@@ -33,6 +34,9 @@ namespace MaraGl
         void LoadSkybox(const std::string &path);
 
     private:
+        void EnsureSplashLogoLoaded();
+        float ComputeStartupProgress();
+        void RenderStartupSplash(float deltaTime);
         void LoadScene(const std::string &scenePath);
         void HandleGraphInput(bool sceneFocused);
         void UpdateCameraBehindModel();
@@ -52,6 +56,17 @@ namespace MaraGl
         Scene m_Scene;
         AssetLoader m_AssetLoader;
         bool m_SceneLoaded = false;
+        bool m_ShowStartupSplash = true;
+        bool m_WindowShown = false;
+        bool m_StartupSceneRequested = false;
+        bool m_SplashFadeOutStarted = false;
+        float m_StartupElapsedSeconds = 0.0f;
+        float m_SplashAlpha = 1.0f;
+        float m_StartupProgress = 0.0f;
+        int m_StartupModelLoadsTotal = 0;
+        unsigned int m_SplashLogoTextureID = 0;
+        int m_SplashLogoWidth = 0;
+        int m_SplashLogoHeight = 0;
         bool m_GameMode = false;
         std::atomic<int> m_PendingModelLoads{0};
         std::atomic<int> m_FailedModelLoads{0};

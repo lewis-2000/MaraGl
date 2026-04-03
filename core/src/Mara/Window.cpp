@@ -17,6 +17,7 @@ namespace MaraGl
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
         // glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
 #ifdef __APPLE__
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // required on macOS
@@ -38,9 +39,6 @@ namespace MaraGl
 
         // Make context current
         glfwMakeContextCurrent(m_Window);
-
-        // Make the window open maximized
-        glfwMaximizeWindow(m_Window);
 
         // Initialize GLAD
         if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -71,5 +69,15 @@ namespace MaraGl
     void Window::pollEvents()
     {
         glfwPollEvents();
+    }
+
+    void Window::show()
+    {
+        if (!m_Window)
+            return;
+
+        glfwMaximizeWindow(m_Window);
+        glfwShowWindow(m_Window);
+        glfwFocusWindow(m_Window);
     }
 }

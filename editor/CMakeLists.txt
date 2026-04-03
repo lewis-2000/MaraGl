@@ -4,6 +4,7 @@ add_executable(editor
     src/main.cpp
     src/AppLayer.cpp
     src/layers/ImGuiLayer.cpp
+    src/panels/ScenePanel.cpp
     src/panels/EditorTimelinePanel.cpp
     src/panels/HierarchyPanel.cpp
     src/panels/InspectorPanel.cpp
@@ -11,6 +12,7 @@ add_executable(editor
     src/panels/AnimationGraphPanel.cpp
     src/panels/SceneSettingsPanel.cpp
     src/panels/LoadingPanel.cpp
+    ${CMAKE_SOURCE_DIR}/vendor/ImGuizmo/ImGuizmo.cpp
 )
 
 # Include directories for headers
@@ -18,6 +20,7 @@ target_include_directories(editor PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/src/panels
     ${CMAKE_CURRENT_SOURCE_DIR}/src/layers
+    ${CMAKE_SOURCE_DIR}/vendor/ImGuizmo
 )
 
 target_link_libraries(editor PRIVATE core)

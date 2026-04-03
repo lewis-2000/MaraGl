@@ -33,6 +33,7 @@ namespace MaraGl
 
         void DrawModel(::Model &model, ::Shader &shader);
         void DrawModel(::Model &model, ::Shader &shader, const glm::mat4 &transform);
+        void DrawModel(::Model &model, ::Shader &shader, const glm::mat4 &transform, const std::vector<MeshMaterialOverride> *materialOverrides);
 
         // Camera accessor
         EditorCamera &GetCamera() { return *m_Camera; }

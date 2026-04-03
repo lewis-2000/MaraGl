@@ -32,3 +32,9 @@ _ReSharper*/
 TestResults/
 # Ignore publish output
 publish/
+
+# Ignore new resources
+resources/new/
+
+# VSCodeCounter is a tool that counts lines of code in Visual Studio Code projects. It generates a file named .VSCodeCounter to store the results, which we want to ignore in version control.
+.VSCodeCounter
