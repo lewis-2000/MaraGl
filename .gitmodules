@@ -18,3 +18,6 @@
 [submodule "vendor/imnodes"]
 	path = vendor/imnodes
 	url = https://github.com/Nelarius/imnodes
+[submodule "vendor/ImGuizmo"]
+	path = vendor/ImGuizmo
+	url = https://github.com/CedricGuillemet/ImGuizmo.git
