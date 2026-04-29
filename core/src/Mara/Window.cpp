@@ -18,6 +18,10 @@ namespace MaraGl
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+        // Keep render targets in physical pixels on HiDPI displays.
+        glfwWindowHint(GLFW_SCALE_FRAMEBUFFER, GLFW_TRUE);
+        // Keep requested window size stable across monitor scale factors.
+        glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_FALSE);
         // glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
 #ifdef __APPLE__
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // required on macOS

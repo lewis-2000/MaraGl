@@ -14,14 +14,21 @@ namespace MaraGl
         ImGui::Begin(GetName(), &m_Open);
 
         ImVec2 size = ImGui::GetContentRegionAvail();
+        const ImVec2 fbScale = ImGui::GetIO().DisplayFramebufferScale;
         m_IsFocused = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
 
         if (m_Framebuffer && size.x > 0.0f && size.y > 0.0f)
         {
-            if ((uint32_t)size.x != m_Framebuffer->getWidth() ||
-                (uint32_t)size.y != m_Framebuffer->getHeight())
+            const float scaleX = fbScale.x > 0.0f ? fbScale.x : 1.0f;
+            const float scaleY = fbScale.y > 0.0f ? fbScale.y : 1.0f;
+
+            const uint32_t targetWidth = static_cast<uint32_t>(size.x * scaleX + 0.5f);
+            const uint32_t targetHeight = static_cast<uint32_t>(size.y * scaleY + 0.5f);
+
+            if (targetWidth != m_Framebuffer->getWidth() ||
+                targetHeight != m_Framebuffer->getHeight())
             {
-                m_Framebuffer->resize((uint32_t)size.x, (uint32_t)size.y);
+                m_Framebuffer->resize(targetWidth, targetHeight);
             }
 
             ImGui::Image(

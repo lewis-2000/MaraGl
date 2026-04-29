@@ -1,6 +1,7 @@
 #pragma once
 #include "Component.h"
 #include <string>
+#include <cstring>
 #include <imgui.h>
 
 namespace MaraGl
@@ -12,7 +13,8 @@ namespace MaraGl
         void OnImGuiRender() override
         {
             char buffer[256];
-            strcpy_s(buffer, sizeof(buffer), Name.c_str());
+            std::strncpy(buffer, Name.c_str(), sizeof(buffer) - 1);
+            buffer[sizeof(buffer) - 1] = '\0';
             if (ImGui::InputText("Name##entity", buffer, 256))
             {
                 Name = buffer;

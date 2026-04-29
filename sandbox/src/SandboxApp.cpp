@@ -868,7 +868,7 @@ namespace MaraGl
 
     void SandboxApp::LoadScene(const std::string &scenePath)
     {
-        std::cout << "[SandboxApp] Loading scene: " << scenePath << std::endl;
+        std::cout << "[SandboxApp] Queueing scene load: " << scenePath << std::endl;
         m_CurrentScenePath = std::filesystem::path(scenePath).generic_string();
         RefreshAvailableScenes();
         m_PendingModelLoads = 0;
@@ -877,81 +877,86 @@ namespace MaraGl
         m_Scene.ClearScene();
         m_Scene.SetLightGizmoVisible(false);
 
-        nlohmann::json sceneJson;
-        if (!SceneSerializer::ParseSceneFile(scenePath, sceneJson))
-        {
-            std::cerr << "[SandboxApp] Failed to load scene: " << scenePath << std::endl;
-            return;
-        }
-
-        // Apply entities/settings immediately, but skip heavyweight model loads.
-        if (!SceneSerializer::ApplySceneData(&m_Scene, sceneJson, false))
-        {
-            std::cerr << "[SandboxApp] Failed to apply scene data: " << scenePath << std::endl;
-            return;
-        }
-
-        // Stream models asynchronously so the app remains responsive.
-        bool playerAssigned = false;
-        size_t queuedModels = 0;
-        for (const auto &entity : m_Scene.GetEntities())
-        {
-            auto *meshComp = entity->GetComponent<MeshComponent>();
-            if (!meshComp || meshComp->ModelPath.empty())
-                continue;
-
-            if (!playerAssigned)
-            {
-                m_PlayerEntityID = entity->GetID();
-                playerAssigned = true;
-            }
-            else
-            {
-                // Keep only one active character for input-driven animation switching.
-                meshComp->Visible = false;
-                continue;
-            }
-
-            const uint32_t entityID = entity->GetID();
-            const std::string modelPath = meshComp->ModelPath;
-            m_PendingModelLoads++;
-
-            m_AssetLoader.LoadModelAsync(modelPath, std::to_string(entityID),
-                                         [this, entityID, modelPath](std::shared_ptr<Model> model, bool success, const std::string &errorMsg)
+        m_AssetLoader.LoadSceneAsync(&m_Scene, scenePath,
+                                     [this, scenePath](bool success, const std::string &errorMsg)
+                                     {
+                                         if (!success)
                                          {
-                                             Entity *target = m_Scene.FindEntityByID(entityID);
-                                             if (target)
+                                             std::cerr << "[SandboxApp] Failed to load scene '" << scenePath << "': " << errorMsg << std::endl;
+                                             m_SceneLoaded = true; // avoid stalling
+                                             return;
+                                         }
+
+                                         // Assign player to the first mesh entity. Keep other characters invisible.
+                                         bool playerAssigned = false;
+                                         size_t queuedModels = 0;
+                                         for (const auto &entity : m_Scene.GetEntities())
+                                         {
+                                             auto *meshComp = entity->GetComponent<MeshComponent>();
+                                             if (!meshComp || meshComp->ModelPath.empty())
+                                                 continue;
+
+                                             if (!playerAssigned)
                                              {
-                                                 auto *mesh = target->GetComponent<MeshComponent>();
-                                                 if (mesh && success && model)
-                                                 {
-                                                     mesh->ModelPtr = model;
-                                                     SetupEntityAnimation(target, false);
-                                                 }
-                                                 else if (!success)
-                                                 {
-                                                     m_FailedModelLoads++;
-                                                     std::cerr << "[SandboxApp] Failed async model load '" << modelPath << "': " << errorMsg << std::endl;
-                                                 }
+                                                 m_PlayerEntityID = entity->GetID();
+                                                 playerAssigned = true;
+                                             }
+                                             else
+                                             {
+                                                 // Keep only one active character for input-driven animation switching.
+                                                 meshComp->Visible = false;
+                                                 continue;
                                              }
 
-                                             m_PendingModelLoads--;
-                                         });
-            queuedModels++;
-        }
+                                             // If AssetLoader preloaded the model it will already be attached.
+                                             if (meshComp->ModelPtr)
+                                             {
+                                                 SetupEntityAnimation(entity.get(), false);
+                                             }
+                                             else
+                                             {
+                                                 const uint32_t entityID = entity->GetID();
+                                                 const std::string modelPath = meshComp->ModelPath;
+                                                 m_PendingModelLoads++;
+                                                 m_AssetLoader.LoadModelAsync(modelPath, std::to_string(entityID),
+                                                                              [this, entityID, modelPath](std::shared_ptr<Model> model, bool loaded, const std::string &loadError)
+                                                                              {
+                                                                                  Entity *target = m_Scene.FindEntityByID(entityID);
+                                                                                  if (target)
+                                                                                  {
+                                                                                      auto *mesh = target->GetComponent<MeshComponent>();
+                                                                                      if (mesh && loaded && model)
+                                                                                      {
+                                                                                          mesh->ModelPtr = model;
+                                                                                          SetupEntityAnimation(target, false);
+                                                                                      }
+                                                                                      else if (!loaded)
+                                                                                      {
+                                                                                          m_FailedModelLoads++;
+                                                                                          std::cerr << "[SandboxApp] Failed async model load '" << modelPath << "': " << loadError << std::endl;
+                                                                                      }
+                                                                                  }
+                                                                                  m_PendingModelLoads--;
+                                                                              });
+                                                 queuedModels++;
+                                             }
+                                         }
 
-        m_SceneLoaded = true;
-        const std::string sceneName = std::filesystem::path(m_CurrentScenePath).filename().string();
-        std::cout << "[SandboxApp] Controls: F1 HUD, P play/pause, R reset, graph input keys from scene, T toggle third-person camera, M toggle root motion, [ previous scene, ] next scene, F5 reload scene." << std::endl;
-        std::cout << "[SandboxApp] Active scene: " << sceneName;
-        if (!m_AvailableScenes.empty() && m_CurrentSceneIndex >= 0)
-            std::cout << " (" << (m_CurrentSceneIndex + 1) << "/" << m_AvailableScenes.size() << ")";
-        std::cout << std::endl;
-        std::cout << "[SandboxApp] Scene loaded. Queued " << queuedModels << " model(s) asynchronously." << std::endl;
+                                         m_SceneLoaded = true;
+                                         const std::string sceneName = std::filesystem::path(m_CurrentScenePath).filename().string();
+                                         std::cout << "[SandboxApp] Controls: F1 HUD, P play/pause, R reset, graph input keys from scene, T toggle third-person camera, M toggle root motion, [ previous scene, ] next scene, F5 reload scene." << std::endl;
+                                         std::cout << "[SandboxApp] Active scene: " << sceneName;
+                                         if (!m_AvailableScenes.empty() && m_CurrentSceneIndex >= 0)
+                                             std::cout << " (" << (m_CurrentSceneIndex + 1) << "/" << m_AvailableScenes.size() << ")";
+                                         std::cout << std::endl;
+                                         std::cout << "[SandboxApp] Scene loaded. Queued " << queuedModels << " model(s) asynchronously." << std::endl;
+                                     });
     }
 
     void SandboxApp::run()
     {
+        m_Window.show();
+
         // Load default scene if not already loaded
         if (!m_SceneLoaded)
         {

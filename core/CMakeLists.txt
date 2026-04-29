@@ -52,8 +52,15 @@ target_include_directories(core PUBLIC
 # ----------------------------
 # OpenGL
 # ----------------------------
-find_package(OpenGL REQUIRED)
-target_link_libraries(core PUBLIC OpenGL::GL)
+find_package(OpenGL)
+if(UNIX AND NOT APPLE AND NOT OpenGL_FOUND)
+    message(WARNING "OpenGL development files were not found. On Ubuntu install: sudo apt install libgl1-mesa-dev")
+endif()
+if(TARGET OpenGL::GL)
+    target_link_libraries(core PUBLIC OpenGL::GL)
+elseif(TARGET OpenGL::OpenGL)
+    target_link_libraries(core PUBLIC OpenGL::OpenGL)
+endif()
 
 # ----------------------------
 # GLFW
@@ -61,6 +68,44 @@ target_link_libraries(core PUBLIC OpenGL::GL)
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+
+set(MARAGL_LINUX_BACKEND "AUTO" CACHE STRING "Linux window backend: AUTO, WAYLAND, or X11")
+set_property(CACHE MARAGL_LINUX_BACKEND PROPERTY STRINGS AUTO WAYLAND X11)
+
+if(UNIX AND NOT APPLE)
+    string(TOUPPER "${MARAGL_LINUX_BACKEND}" MARAGL_LINUX_BACKEND_NORMALIZED)
+
+    if(MARAGL_LINUX_BACKEND_NORMALIZED STREQUAL "WAYLAND")
+        set(GLFW_BUILD_WAYLAND ON CACHE BOOL "" FORCE)
+        set(GLFW_BUILD_X11 OFF CACHE BOOL "" FORCE)
+    elseif(MARAGL_LINUX_BACKEND_NORMALIZED STREQUAL "X11")
+        set(GLFW_BUILD_WAYLAND OFF CACHE BOOL "" FORCE)
+        set(GLFW_BUILD_X11 ON CACHE BOOL "" FORCE)
+    elseif(MARAGL_LINUX_BACKEND_NORMALIZED STREQUAL "AUTO")
+        find_program(MARAGL_WAYLAND_SCANNER_EXECUTABLE NAMES wayland-scanner)
+        if(MARAGL_WAYLAND_SCANNER_EXECUTABLE)
+            set(GLFW_BUILD_WAYLAND ON CACHE BOOL "" FORCE)
+            set(GLFW_BUILD_X11 OFF CACHE BOOL "" FORCE)
+        else()
+            set(GLFW_BUILD_WAYLAND OFF CACHE BOOL "" FORCE)
+            set(GLFW_BUILD_X11 ON CACHE BOOL "" FORCE)
+        endif()
+    else()
+        message(FATAL_ERROR "Invalid MARAGL_LINUX_BACKEND='${MARAGL_LINUX_BACKEND}'. Use AUTO, WAYLAND, or X11.")
+    endif()
+
+    if(GLFW_BUILD_WAYLAND)
+        find_program(MARAGL_WAYLAND_SCANNER_EXECUTABLE NAMES wayland-scanner)
+        if(NOT MARAGL_WAYLAND_SCANNER_EXECUTABLE)
+            message(FATAL_ERROR
+                "Wayland backend selected, but 'wayland-scanner' was not found. "
+                "On Ubuntu install: sudo apt install libwayland-dev wayland-protocols")
+        endif()
+        message(STATUS "MaraGl Linux backend: Wayland")
+    else()
+        message(STATUS "MaraGl Linux backend: X11")
+    endif()
+endif()
 
 add_subdirectory(
     ${VENDOR_DIR}/glfw
@@ -126,7 +171,12 @@ target_include_directories(imgui PUBLIC
      ${VENDOR_DIR}/stb
 )
 
-target_link_libraries(imgui PUBLIC glfw OpenGL::GL)
+target_link_libraries(imgui PUBLIC glfw)
+if(TARGET OpenGL::GL)
+    target_link_libraries(imgui PUBLIC OpenGL::GL)
+elseif(TARGET OpenGL::OpenGL)
+    target_link_libraries(imgui PUBLIC OpenGL::OpenGL)
+endif()
 target_link_libraries(core PUBLIC imgui)
 
 # ----------------------------

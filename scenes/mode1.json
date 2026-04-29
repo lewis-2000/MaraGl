@@ -1,0 +1,1204 @@
+{
+    "entities": [
+        {
+            "animationGraph": {
+                "activeState": 0,
+                "enabled": false,
+                "entryNodePosition": [
+                    -280.0,
+                    60.0
+                ],
+                "inputs": [],
+                "library": [],
+                "states": [],
+                "transitions": []
+            },
+            "id": 3,
+            "mesh": {
+                "meshMaterials": [
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 2,
+                        "texturePath": "C:\\Users\\flamm\\Dev\\Graphics\\MaraGl\\resources\\new\\sponza\\textures\\arch_stone_wall_01_Metalness.png"
+                    },
+                    {
+                        "color": [
+                            0.514950156211853,
+                            0.13857463002204895,
+                            0.13857463002204895
+                        ],
+                        "mode": 1,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 2,
+                        "texturePath": "C:\\Users\\flamm\\Dev\\Graphics\\MaraGl\\resources\\new\\sponza\\textures\\column_1stfloor_Metalness.png"
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    }
+                ],
+                "modelPath": "C:\\Users\\flamm\\Dev\\Graphics\\MaraGl\\resources\\new\\sponza\\Sponza.fbx",
+                "scale": 0.009999999776482582,
+                "visible": true
+            },
+            "name": {
+                "value": "New Entity"
+            },
+            "transform": {
+                "position": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        },
+        {
+            "animationGraph": {
+                "activeState": 0,
+                "enabled": false,
+                "entryNodePosition": [
+                    -280.0,
+                    60.0
+                ],
+                "inputs": [],
+                "library": [],
+                "states": [],
+                "transitions": []
+            },
+            "id": 4,
+            "light": {
+                "color": [
+                    0.9568106532096863,
+                    0.8572232127189636,
+                    0.6961513161659241
+                ],
+                "enabled": true,
+                "innerAngle": 15.0,
+                "intensity": 0.6000000238418579,
+                "outerAngle": 25.0,
+                "range": 10.0,
+                "type": 1
+            },
+            "name": {
+                "value": "Light1"
+            },
+            "transform": {
+                "position": [
+                    0.0,
+                    4.54697322845459,
+                    0.24144306778907776
+                ],
+                "rotation": [
+                    0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        }
+    ],
+    "settings": {
+        "camera": {
+            "farClip": 100.0,
+            "fov": 45.0,
+            "mouseSensitivity": 0.009999999776482582,
+            "moveSpeed": 5.0,
+            "nearClip": 0.10000000149011612,
+            "pitch": -0.4200001060962677,
+            "position": [
+                -12.877298355102539,
+                18.719791412353516,
+                29.233366012573242
+            ],
+            "yaw": 4.569183349609375
+        },
+        "overcast": {
+            "color": [
+                0.6000000238418579,
+                0.699999988079071,
+                0.800000011920929
+            ],
+            "enabled": false,
+            "intensity": 0.20000000298023224
+        },
+        "skybox": {
+            "enabled": true,
+            "path": "resources/skybox/suburban_garden_1k.exr"
+        }
+    },
+    "version": "1.0"
+}

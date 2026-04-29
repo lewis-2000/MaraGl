@@ -32,11 +32,11 @@ inline std::string Logger::getTimestamp()
 #if defined(_WIN32) || defined(_WIN64) // Windows: use localtime_s
     localtime_s(&tm, &time);
 #elif defined(__linux__) // Linux: use localtime_r
-    localtime_r(&rawtime, &tm);
+    localtime_r(&time, &tm);
 #elif defined(__APPLE__) // macOS: also supports localtime_r
-    localtime_r(&rawtime, &tm);
+    localtime_r(&time, &tm);
 #else                    // Fallback: not thread-safe
-    struct tm *tmp = localtime(&rawtime);
+    struct tm *tmp = localtime(&time);
     if (tmp)
         tm = *tmp;
 #endif

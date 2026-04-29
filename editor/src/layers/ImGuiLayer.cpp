@@ -40,6 +40,9 @@ namespace MaraGl
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         // Enable viewports: allows windows to float outside the main window
         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+        // Let ImGui adapt fonts and viewport scale to monitor DPI.
+        io.ConfigDpiScaleFonts = true;
+        io.ConfigDpiScaleViewports = true;
 
         ImGui::StyleColorsDark();
         // ImGui::StyleColorsLight();
@@ -49,7 +52,7 @@ namespace MaraGl
         ImGui_ImplGlfw_InitForOpenGL(m_Window.getWindow(), true);
         ImGui_ImplOpenGL3_Init("#version 460");
 
-        const ImGuiFontSet fonts = ConfigureDefaultImGuiFonts(io, 20.0f, 20.0f);
+        const ImGuiFontSet fonts = ConfigureDefaultImGuiFonts(io, 16.0f, 15.0f);
         if (fonts.mergedIconFont)
         {
             m_IconFonts["FontAwesome"] = fonts.mergedIconFont;
