@@ -1,0 +1,1252 @@
+{
+    "entities": [
+        {
+            "animationGraph": {
+                "activeState": 0,
+                "enabled": false,
+                "entryNodePosition": [
+                    -280.0,
+                    60.0
+                ],
+                "inputs": [],
+                "library": [],
+                "states": [],
+                "transitions": []
+            },
+            "id": 3,
+            "mesh": {
+                "meshMaterials": [
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 2,
+                        "texturePath": "/home/nganga/dev/Graphics/MaraGl/resources/new/sponza/textures/roof_tiles_01_BaseColor.png"
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 2,
+                        "texturePath": "/home/nganga/dev/Graphics/MaraGl/resources/new/sponza/textures/floor_tiles_01_BaseColor.png"
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 2,
+                        "texturePath": "/home/nganga/dev/Graphics/MaraGl/resources/new/sponza/textures/ornament_01_BaseColor.png"
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 2,
+                        "texturePath": "/home/nganga/dev/Graphics/MaraGl/resources/new/sponza/textures/ornament_01_Metalness.png"
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 2,
+                        "texturePath": "/home/nganga/dev/Graphics/MaraGl/resources/new/sponza/textures/ornament_01_Normal.png"
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 2,
+                        "texturePath": "/home/nganga/dev/Graphics/MaraGl/resources/new/sponza/textures/ornament_01_BaseColor.png"
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 2,
+                        "texturePath": "/home/nganga/dev/Graphics/MaraGl/resources/new/sponza/textures/metal_door_01_BaseColor.png"
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 2,
+                        "texturePath": "/home/nganga/dev/Graphics/MaraGl/resources/new/sponza/textures/ornament_01_BaseColor.png"
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 2,
+                        "texturePath": "/home/nganga/dev/Graphics/MaraGl/resources/new/sponza/textures/ornament_01_BaseColor.png"
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 2,
+                        "texturePath": "/home/nganga/dev/Graphics/MaraGl/resources/new/sponza/textures/lionhead_01_BaseColor.png"
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 2,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 2,
+                        "texturePath": "/home/nganga/dev/Graphics/MaraGl/resources/new/sponza/textures/column_1stfloor_BaseColor.png"
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 2,
+                        "texturePath": "/home/nganga/dev/Graphics/MaraGl/resources/new/sponza/textures/ornament_01_BaseColor.png"
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 2,
+                        "texturePath": "/home/nganga/dev/Graphics/MaraGl/resources/new/sponza/textures/arch_stone_wall_01_BaseColor.png"
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 2,
+                        "texturePath": "/home/nganga/dev/Graphics/MaraGl/resources/new/sponza/textures/window_frame_01_BaseColor.png"
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 2,
+                        "texturePath": "/home/nganga/dev/Graphics/MaraGl/resources/new/sponza/textures/wood_door_01_BaseColor.png"
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 2,
+                        "texturePath": "/home/nganga/dev/Graphics/MaraGl/resources/new/sponza/textures/brickwall_01_BaseColor.png"
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 2,
+                        "texturePath": "/home/nganga/dev/Graphics/MaraGl/resources/new/sponza/textures/arch_stone_wall_01_BaseColor.png"
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 2,
+                        "texturePath": "/home/nganga/dev/Graphics/MaraGl/resources/new/sponza/textures/arch_stone_wall_01_Metalness.png"
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 2,
+                        "texturePath": "/home/nganga/dev/Graphics/MaraGl/resources/new/sponza/textures/arch_stone_wall_01_Roughness.png"
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            0.5719844102859497,
+                            0.23146452009677887,
+                            0.23146452009677887
+                        ],
+                        "mode": 1,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            0.42023348808288574,
+                            0.2011234313249588,
+                            0.2011234313249588
+                        ],
+                        "mode": 1,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 2,
+                        "texturePath": "/home/nganga/dev/Graphics/MaraGl/resources/new/sponza/textures/column_head_2ndfloor_02_BaseColor.png"
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 2,
+                        "texturePath": "/home/nganga/dev/Graphics/MaraGl/resources/new/sponza/textures/column_head_2ndfloor_02_BaseColor.png"
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 2,
+                        "texturePath": "/home/nganga/dev/Graphics/MaraGl/resources/new/sponza/textures/column_head_2ndfloor_02_BaseColor.png"
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 2,
+                        "texturePath": "/home/nganga/dev/Graphics/MaraGl/resources/new/sponza/textures/column_head_2ndfloor_02_BaseColor.png"
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 2,
+                        "texturePath": "/home/nganga/dev/Graphics/MaraGl/resources/new/sponza/textures/column_head_2ndfloor_02_BaseColor.png"
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 2,
+                        "texturePath": "/home/nganga/dev/Graphics/MaraGl/resources/new/sponza/textures/column_head_2ndfloor_02_BaseColor.png"
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    },
+                    {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "mode": 0,
+                        "texturePath": ""
+                    }
+                ],
+                "modelPath": "/home/nganga/dev/Graphics/MaraGl/resources/new/sponza/Sponza.fbx",
+                "scale": 0.009999999776482582,
+                "visible": true
+            },
+            "name": {
+                "value": "House"
+            },
+            "transform": {
+                "position": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        },
+        {
+            "animationGraph": {
+                "activeState": 0,
+                "enabled": false,
+                "entryNodePosition": [
+                    -280.0,
+                    60.0
+                ],
+                "inputs": [],
+                "library": [],
+                "states": [],
+                "transitions": []
+            },
+            "id": 4,
+            "light": {
+                "color": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "enabled": true,
+                "innerAngle": 15.0,
+                "intensity": 0.4000000059604645,
+                "outerAngle": 25.0,
+                "range": 10.0,
+                "type": 1
+            },
+            "name": {
+                "value": "OvercastLight"
+            },
+            "transform": {
+                "position": [
+                    0.0,
+                    9.275035858154297,
+                    0.0
+                ],
+                "rotation": [
+                    0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        },
+        {
+            "animationGraph": {
+                "activeState": 0,
+                "enabled": false,
+                "entryNodePosition": [
+                    -280.0,
+                    60.0
+                ],
+                "inputs": [],
+                "library": [],
+                "states": [],
+                "transitions": []
+            },
+            "id": 5,
+            "light": {
+                "color": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "enabled": true,
+                "innerAngle": 15.0,
+                "intensity": 1.0,
+                "outerAngle": 25.0,
+                "range": 10.0,
+                "type": 2
+            },
+            "name": {
+                "value": "Light2"
+            },
+            "transform": {
+                "position": [
+                    -5.177684307098389,
+                    5.508598327636719,
+                    1.1283278465270996
+                ],
+                "rotation": [
+                    0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        }
+    ],
+    "settings": {
+        "camera": {
+            "farClip": 100.0,
+            "fov": 45.0,
+            "mouseSensitivity": 0.009999999776482582,
+            "moveSpeed": 5.0,
+            "nearClip": 0.10000000149011612,
+            "pitch": 0.371367871761322,
+            "position": [
+                9.373598098754883,
+                3.385417938232422,
+                -0.11194764822721481
+            ],
+            "yaw": -15.786067962646484
+        },
+        "overcast": {
+            "color": [
+                0.6000000238418579,
+                0.699999988079071,
+                0.800000011920929
+            ],
+            "enabled": false,
+            "intensity": 0.20000000298023224
+        },
+        "skybox": {
+            "enabled": true,
+            "path": "resources/skybox/citrus_orchard_road_puresky_2k.exr"
+        }
+    },
+    "version": "1.0"
+}
