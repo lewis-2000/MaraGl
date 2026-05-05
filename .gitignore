@@ -38,3 +38,6 @@ resources/new/
 
 # VSCodeCounter is a tool that counts lines of code in Visual Studio Code projects. It generates a file named .VSCodeCounter to store the results, which we want to ignore in version control.
 .VSCodeCounter
+ 
+# Ensure the `vendor/glad/` folder is tracked (un-ignore if vendor/ is globally ignored)
+!vendor/glad/
